@@ -1,0 +1,51 @@
+upstream thin {
+<%= upstream %>}
+
+server {
+    listen 80;
+    server_name .<%= appUrl %>;
+  
+    access_log /var/log/nginx/<%= appName %>.access.log;
+    error_log  /var/log/nginx/<%= appName %>.error.log;
+  
+    root /var/www/<%= appName %>;
+
+    index index.php index.html index.htm;
+
+    # Magic for using asset fingerprinting in Rails via md5 of resource
+    rewrite "(.*)-fp-[0-9a-z]{32}(.*)" $1$2 last;
+
+    # Serving static assets:
+    location /static/ {
+      root /var/www/<%= appName %>/public;
+    }
+
+    # Serving images and files:
+    location ~* ^.+.(jpg|jpeg|gif|css|png|js|ico|xml|zip|pdf)$ {
+      root /var/www/<%= appName %>/public;
+    }
+
+    location / {
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header Host $http_host;
+      proxy_redirect off;
+
+      if (-f $request_filename/index.html) {
+        rewrite (.*) $1/index.html break;
+      }
+      if (-f $request_filename.html) {
+        rewrite (.*) $1.html break;
+      }
+      if (!-f $request_filename) {
+        proxy_pass http://thin;
+        break;
+      }
+    }
+  
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+      root html;
+    }
+
+}

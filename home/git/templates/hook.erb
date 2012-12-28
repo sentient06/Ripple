@@ -1,0 +1,15 @@
+#!/bin/sh
+
+red='\033[0;31m';
+gre='\033[0;32m';
+yel='\033[0;33m';
+ncl='\033[0m'; #No colour
+
+echo "${gre}Post receive hook: Updating <%= appName %>...${yel}"
+
+export GIT_WORK_TREE=/var/www/<%= appName %>
+cd $GIT_WORK_TREE
+sudo -u deploy git pull
+sudo -u deploy git checkout master -f
+/usr/local/rvm/bin/rvmsudo -u deploy /usr/local/rvm/bin/ruby /home/deploy/scripts/deploy.rb <%= appName %>
+echo "${ncl}"
