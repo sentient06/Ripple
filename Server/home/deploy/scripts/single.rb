@@ -358,6 +358,9 @@ class DeploymentActions
             return
         end
 
+        @apps[appName]["enabled"] = false
+        saveData
+
     end
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -374,6 +377,8 @@ class DeploymentActions
             nginxCmd1 = system( "sudo rm #{nginxConfigLink}" )
 
             if nginxCmd1 == true
+                @apps[appName]["enabled"] = false
+                saveData
                 ptConfirm
             else
                 ptError "Could not delete configuration symlink for #{appName}"
@@ -390,6 +395,8 @@ class DeploymentActions
             nginxCmd2 = system( "sudo rm #{nginxConfigFile}" )
 
             if nginxCmd2 == true
+                @apps[appName]["available"] = false
+                saveData
                 ptConfirm
             else
                 ptError "Could not delete configuration file for #{appName}"
@@ -436,6 +443,9 @@ class DeploymentActions
             ptError "Could not delete Thin configuration for #{appName}"
             return
         end
+
+        @apps[appName]["thin"] = false
+        saveData
 
     end
 
@@ -555,54 +565,53 @@ class DeploymentActions
     end
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
+    
+    # List all applications names, ports used and url.
+    #
     def list
-
         # Iterate through all apps and print
-
         @apps.each {|key, value|
             print @gre
             printf(" - %.15s - %d ports (%d) - %s\n", key.to_s, value['ports'], value['first'], value['url'])
             print @ncl
         }
         print "\n"
-
     end
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+    # Creates a new application
+    #
     def create appName, appURL, appPorts
-
+        
         # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
         # Check for errors:
 
         if appName.nil?
-            ptError "Define a name to create this application"
-            return
+          ptError "Define a name to create this application"
+          return
         end
 
         if appURL.nil?
-            ptError "Define an URL to create this application"
-            return
+          ptError "Define an URL to create this application"
+          return
         end
 
         if appPorts.nil?
-            appPorts = 1
+          appPorts = 1
         end
 
         loadData
 
         unless @apps[appName].nil?
-            ptError "There is already an app with this name"
-            return
+          ptError "There is already an app with this name"
+          return
         end
 
         # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
         # Create empty application:
 
-        # App hash:
         @apps[appName]               = Hash.new
-
         @apps[appName]["url"]        = appURL        # application dns
         @apps[appName]["ports"]      = appPorts.to_i # quantity of thin ports
        #@apps[appName]["first"]      = 3000 + x
@@ -624,19 +633,17 @@ class DeploymentActions
         createRepository appName # set 'repository'
 
         if @stop == true
-            return
+          return
         end
 
-        # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
         # Clone repository for further use:
 
         cloneRepository appName
 
         if @stop == true
-            return
+          return
         end
 
-        # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
         # Save server configurations:
 
         availNginxConfigFile appName # available (should enable at deployment only)
@@ -645,7 +652,8 @@ class DeploymentActions
     end
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
+    # Check database information and create it if needed
+    #
     def deployDatabase appName
 
         # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -768,27 +776,8 @@ class DeploymentActions
     end
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    def enable appName
-
-        unless @apps[appName]["installed"]
-            ptError "Install #{appName} before enabling it"
-            return
-        end
-
-        enableNginxConfigFile appName
-
-        # if 
-            stopServers
-            @apps[appName]["activated"] = true
-            saveData
-            startServers
-        # end
-        
-    end
-
-    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
+    # Deploy application
+    #
     def deploy appName
 
         ptGreen "[Checking data]"
@@ -811,87 +800,75 @@ class DeploymentActions
         end
 
         #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
         # If already online, stop thin.
 
         if @apps[appName]["online"]
-            
             stopNginx
             stopThin appName
             startNginx
-
             @apps[appName]["online"] = false
             saveData
         end
 
-        #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        # Deploy database
 
         ptNormal "[Checking database]"
 
         if @apps[appName]["db"] == false
-            deployDatabase appName
-            if @stop == true
-                return
-            end
+          deployDatabase appName
+          if @stop == true
+            return
+          end
         end
 
         #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
         ptGreen "[Deploying]"
-
-        ptNormal "Accessing folder"
-
         Dir.chdir "#{@productionFolder}#{appName}"
-
-        #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
         ptNormal "Executing 'bundle package'"
         deployStep2 = system( "bundle package" )
 
         unless deployStep2
-            ptError "Could not deploy step 2 - bundle package"
-            return
+          ptError "Could not deploy step 2 - bundle package"
+          return
         else
-            ptConfirm
+          ptConfirm
         end
-
-        #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
         ptNormal "Executing 'bundle install'"
         deployStep3 = system( "bundle install --deployment" )
 
         unless deployStep3
-            ptError "Could not deploy step 3 - bundle install"
-            return
+          ptError "Could not deploy step 3 - bundle install"
+          return
         else
-            ptConfirm
+          ptConfirm
         end
 
-        #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
         # Check for migrations!
+
         migrationsFolder = "#{@productionFolder}#{appName}/db/migrate/"
         migrationsNumber = Dir.glob(File.join(migrationsFolder, '**', '*.rb')).count
 
         if migrationsNumber > 0
-            ptNormal "#{migrationsNumber} migrations found."
-            ptNormal "Migrating"
-            deployStep4 = system( "RAILS_ENV=production rake db:migrate" )
-            ptConfirm
+          ptNormal "#{migrationsNumber} migrations found."
+          ptNormal "Migrating"
+          deployStep4 = system( "RAILS_ENV=production rake db:migrate" )
+          ptConfirm
         end
-
-        #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
         ptNormal "Precompile assets"
         deployStep5 = system( "rake assets:precompile" )
 
         unless deployStep5
-            ptError "Could not deploy step 5 - assets precompile"
-            return
+          ptError "Could not deploy step 5 - assets precompile"
+          return
         else
-            ptConfirm
+          ptConfirm
         end
 
-        #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # If all is fine, start thin, restart nginx.
 
         stopNginx
@@ -901,36 +878,42 @@ class DeploymentActions
     end
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
+    # Rewrites the config files and resets thin
+    #
     def reset appName
 
-        if @apps[appName]["installed"] & @apps[appName]["activated"]
-            deleteNginxConfigFile appName
-            deleteThinConfigFile appName
-            availNginxConfigFile appName
-            saveThinConfigFile appName
-        end
+      if @apps[appName]["online"]
+        
+        stopThin appName
+
+        deleteNginxConfigFile appName
+        deleteThinConfigFile appName
+
+        saveThinConfigFile
+        availNginxConfigFile
+        enableNginxConfigFile
+
+        startThin appName
+      
+      end
 
     end
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    def resetAll
-        
-        stopServers
-
+    # Rewrites the config files and resets the servers
+    #
+    def resetAll        
+        stopNginx
         resetApplicationData
-
         @apps.each {|key, value|
             reset key
         }
-
-        startServers
-
+        startNginx
     end
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
+    # Sets new value in the apps hash
+    #
     def set appName, key, value
         @apps[appName][key] = value
         saveData
@@ -938,20 +921,25 @@ class DeploymentActions
     end
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
+    # Deletes configuration files and stops the application
+    #
     def disable appName
 
-        unless @apps[appName]["activated"]
-            ptError "#{appName.capitalize} already disabled"
+        unless @apps[appName]["online"]
+            ptError "#{appName.capitalize} already offline"
             return
         end
 
-        deleteConf = deleteNginxConfigFile appName
+        stopNginx
+        stopThin appName
 
-        if deleteConf
-            @apps[appName]["activated"] = false
-            saveData
-        end
+        deleteNginxConfigFile appName
+        deleteThinConfigFile appName
+
+        startNginx
+
+        @apps[appName]["online"] = false
+        saveData
 
     end
 
@@ -962,21 +950,9 @@ class DeploymentActions
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    def uninstall appName
-
-        deleteThinConfigFile appName
-        deleteNginxConfigFile appName
-
-        @apps[appName]["installed"] = false
-
-        saveData
-    end
-
-    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
     def destroy appName
-        uninstall appName
-        action = system( "sudo -u git rm -rf #{@productionFolder}#{appName} && sudo -u git rm -rf #{@repositoriesFolder}#{appName}.git" )
+        disable appName
+        action = system( "rm -rf #{@productionFolder}#{appName} && sudo -u git rm -rf #{@repositoriesFolder}#{appName}.git" )
         @apps.delete(appName)
         saveData
         ptGreen "#{appName.capitalize} destroyed!"
