@@ -217,6 +217,7 @@ class DeploymentActions
 
         unless createFolder
             ptError "Could not create git folder"
+            @stop = true
             return
         else
             ptConfirm
@@ -231,7 +232,8 @@ class DeploymentActions
 
         unless createGit
             ptError "Could not create git repository"
-            return 3
+            @stop = true
+            return
         else
             ptConfirm
         end
@@ -248,6 +250,7 @@ class DeploymentActions
         else
             print "\n"
             ptError "Could not create hook"
+            @stop = true
             return
         end
 
@@ -271,6 +274,7 @@ class DeploymentActions
             ptConfirm
         else
             ptError "Repository could not be cloned"
+            @stop = true
             return
         end
 
@@ -285,6 +289,7 @@ class DeploymentActions
             ptConfirm
         else
             ptError "Could not change repository's permissions"
+            @stop = true
             return
         end
 
@@ -314,7 +319,7 @@ class DeploymentActions
         file = "#{@templatesFolder}nginx.erb"
         nginxTemplate = ERB.new(File.read(file))
         nginxConfig = nginxTemplate.result(binding)
-        nginxCommand = File.open("#{nginxAvailableFolder}#{appName}.conf", 'w') {|f| f.write(nginxConfig) }
+        nginxCommand = File.open("#{@nginxAvailableFolder}#{appName}.conf", 'w') {|f| f.write(nginxConfig) }
 
         unless nginxCommand.nil?
           ptConfirm
@@ -330,8 +335,8 @@ class DeploymentActions
 
     def enableNginxConfigFile appName
 
-        nginxConfigFile = "#{nginxAvailableFolder}#{appName}.conf"
-        nginxConfigLink = "#{nginxEnabledFolder}#{appName}.conf"
+        nginxConfigFile = "#{@nginxAvailableFolder}#{appName}.conf"
+        nginxConfigLink = "#{@nginxEnabledFolder}#{appName}.conf"
         
         ptNormal "Checking Nginx config file"
 
@@ -359,8 +364,8 @@ class DeploymentActions
 
     def deleteNginxConfigFile appName
 
-        nginxConfigFile = "/etc/nginx/sites-available/#{appName}.conf"
-        nginxConfigLink = "/etc/nginx/sites-enabled/#{appName}.conf"
+        nginxConfigFile = "#{@nginxAvailableFolder}#{appName}.conf"
+        nginxConfigLink = "#{@nginxEnabledFolder}#{appName}.conf"
 
         if File.exists?(nginxConfigLink)
 
@@ -618,10 +623,18 @@ class DeploymentActions
         resetApplicationData     # set 'first'
         createRepository appName # set 'repository'
 
+        if @stop == true
+            return
+        end
+
         # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
         # Clone repository for further use:
 
         cloneRepository appName
+
+        if @stop == true
+            return
+        end
 
         # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
         # Save server configurations:
