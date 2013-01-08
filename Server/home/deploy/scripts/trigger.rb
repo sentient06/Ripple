@@ -1,6 +1,6 @@
 #! /bin/ruby
 
-require '/home/deploy/scripts/single.rb'
+require '/home/deploy/scripts/deployment_actions.rb'
 deployer = DeploymentActions.new
 
 if ARGV[0] == 'list'

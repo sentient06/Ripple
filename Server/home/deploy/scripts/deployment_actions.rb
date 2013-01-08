@@ -1,4 +1,4 @@
-# single.rb
+# deployment_actions.rb
 # Ruby Deployment for Humans
 #
 # Created by Giancarlo Mariot on 02/01/2013.
@@ -29,9 +29,10 @@
 #
 #------------------------------------------------------------------------------
 
-# Check production password before adding db stuff
-# Check if db is needed (look for migrations)
-# Always bundle before pushing
+# Conventions:
+# http://pub.cozmixng.org/~the-rwiki/rw-cgi.rb?cmd=view;name=RubyCodingConvention
+# http://www.caliban.org/ruby/rubyguide.shtml
+
 # Check if Thin is in the Gemfile
 
 
@@ -61,243 +62,259 @@ require 'yaml'
 
 class DeploymentActions
 
-    def initialize
+  def initialize
 
-        @red = "\033[0;31m"
-        @gre = "\033[0;32m"
-        @yel = "\033[0;33m"
-        @ncl = "\033[0m" #No colour
+    @red = "\033[0;31m"
+    @gre = "\033[0;32m"
+    @yel = "\033[0;33m"
+    @ncl = "\033[0m" #No colour
 
-        @dataFile             = '/home/deploy/data/apps'
-        @repositoriesFolder   = "/home/git/repositories/"
-        @templatesFolder      = "/home/deploy/templates/"
-        @productionFolder     = "/var/www/"
-        @databaseYml          = "/config/database.yml"
-        @nginxAvailableFolder = "/etc/nginx/sites-available/"
-        @nginxEnabledFolder   = "/etc/nginx/sites-enabled/"
+    @deployerUser = "deploy"
+    @gitUser      = "git"
 
-        @stop = false
+    @dataFile             = '/home/#{@deployerUser}/data/apps'
+    @repositoriesFolder   = "/home/#{@gitUser}/repositories/"
+    @templatesFolder      = "/home/#{@deployerUser}/templates/"
+    @productionFolder     = "/var/www/"
+    @databaseYml          = "/config/database.yml"
+    @nginxAvailableFolder = "/etc/nginx/sites-available/"
+    @nginxEnabledFolder   = "/etc/nginx/sites-enabled/"
 
-        loadData
+    @stop = false
 
+    loadData
+
+  end
+
+  #-------------------------------------------------------------------------------
+  # Getters to use on IRB
+
+  def vars
+    puts "dataFile\nrepositoriesFolder\ntemplatesFolder\nproductionFolder\ndatabaseYml\nlastMsg\napps"
+  end
+
+  def dataFile
+    @dataFile
+  end
+
+  def repositoriesFolder
+    @repositoriesFolder
+  end
+
+  def templatesFolder
+    @templatesFolder
+  end
+
+  def productionFolder
+    @productionFolder
+  end
+
+  def databaseYml
+    @databaseYml
+  end
+
+  def lastMsg
+    @lastMsg
+  end
+
+  def apps
+    @apps
+  end
+
+  #-------------------------------------------------------------------------------
+  # Print methods
+
+  def ptNormal(msg)
+
+    print "#{@yel}#{msg}...#{@ncl}\n"
+    # print "\r"
+    @lastMsg = msg
+
+  end
+
+  def ptConfirm
+
+    puts "#{@gre}#{@lastMsg}. [ok]     #{@ncl}"
+
+  end
+
+  def ptGreen(msg)
+
+    puts "\n#{@gre}#{msg}#{@ncl}\n"
+
+  end
+
+  def ptError(msg)
+
+    puts "\n#{@red}[Error] #{msg}!     #{@ncl}\n"
+
+  end
+
+  #-------------------------------------------------------------------------------
+  # File methods
+
+  def loadData
+
+    if File.exists?(@dataFile)
+      @apps = Marshal.load File.read(@dataFile)
+      print "\r"
+      ptGreen("Loading list of apps")
+    else
+      @apps = Hash.new
+      print "\r"
+      ptGreen("Created new list of apps")
     end
 
-    #-------------------------------------------------------------------------------
-    #pragma mark – Getters to use on IRB
-    # Print Variables
+  end
 
-    def vars
-        puts "dataFile\nrepositoriesFolder\ntemplatesFolder\nproductionFolder\ndatabaseYml\nlastMsg\napps"
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  def saveData
+    serialisedApps = Marshal.dump(@apps)
+    savedFile = File.open(@dataFile, 'w') {|f| f.write(serialisedApps) }
+    if savedFile.nil?
+      ptError("Something went wrong saving the data file")
+      return 1
     end
+  end
 
-    def dataFile
-        @dataFile
-    end
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    def repositoriesFolder
-        @repositoriesFolder
-    end
+  def resetApplicationData
 
-    def templatesFolder
-        @templatesFolder
-    end
+    port = 3000
 
-    def productionFolder
-        @productionFolder
-    end
+    # Iterates through all apps to store correct ports:
 
-    def databaseYml
-        @databaseYml
-    end
-
-    def lastMsg
-        @lastMsg
-    end
-
-    def apps
-        @apps
-    end
-
-
-    #-------------------------------------------------------------------------------
-    # Print methods
-
-    def ptNormal msg
-        print "#{@yel}#{msg}...#{@ncl}\n"
-        # print "\r"
-        @lastMsg = msg
-    end
-
-    def ptConfirm
-        puts "#{@gre}#{@lastMsg}. [ok]     #{@ncl}"
-    end
-
-    def ptGreen msg
-        puts "\n#{@gre}#{msg}#{@ncl}\n"
-    end
-
-    def ptError msg
-        puts "\n#{@red}[Error] #{msg}!     #{@ncl}\n"
-    end
-
-    #-------------------------------------------------------------------------------
-    # File methods
-
-    def loadData
-
-        if File.exists?(@dataFile)
-            @apps = Marshal.load File.read(@dataFile)
-            print "\r"
-            ptGreen "Loading list of apps"
-        else
-            @apps = Hash.new
-            print "\r"
-            ptGreen "Created new list of apps"
+    @apps.each {|key, value|
+      value["ports"].times do |i|
+        if i == 0
+          value["first"] = port
         end
+        puts "#{@gre} - Port #{port} - #{key}#{@ncl}"
+        port += 1
+      end
+    }
+
+    #- - - - - - - - - - - - - - - - - - - - - - - - -
+
+    saveData
+
+  end
+
+  #---------------------------------------------------------------------------
+  # Secondary methods
+
+  def createRepository(appName)
+
+    # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+    # Checks for repository:
+
+    repositoryFolder = "#{@repositoriesFolder}#{appName}.git"
+
+    if File.exists?(repositoryFolder)
+      ptError "Repository folder already exists"
+
+      return
 
     end
 
-    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+    # Creates folder:
 
-    def saveData
-        serialisedApps = Marshal.dump(@apps)
-        savedFile = File.open(@dataFile, 'w') {|f| f.write(serialisedApps) }
-        if savedFile.nil?
-            ptError "Something went wrong saving the data file"
-            return 1
-        end
+    ptNormal "Creating repository folder for #{appName}"
+
+    createFolder = system("sudo -u git mkdir #{repositoryFolder}")
+
+    unless createFolder
+      ptError "Could not create git folder"
+      @stop = true
+
+      return
+
+    else
+      ptConfirm
     end
 
-    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+    # Creates git bare respository
 
-    def resetApplicationData
+    ptNormal "Creating bare repository for #{appName}"
 
-        port = 3000
+    createGit = system( "sudo -u git git init #{repositoryFolder}/ --bare" )
 
-        #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        # Iterates through all apps to store correct ports:
-
-        @apps.each {|key, value|
-            value["ports"].times do |i|
-                if i == 0
-                    value["first"] = port
-                end
-                puts "#{@gre} - Port #{port} - #{key}#{@ncl}"
-                port += 1
-            end
-        }
-
-        #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-        saveData
-
+    unless createGit
+        ptError "Could not create git repository"
+        @stop = true
+        return
+    else
+        ptConfirm
     end
 
-    #---------------------------------------------------------------------------
-    # Secondary methods
+    # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+    # Saves the post-update hook:
 
-    def createRepository appName
+    ptNormal "Creating hooks for #{appName}"
 
-        # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-        # Checks for repository:
+    createHook = system( "rvmsudo -u git ruby /home/git/scripts/createHook.rb #{appName}" )
 
-        repositoryFolder = "#{@repositoriesFolder}#{appName}.git"
+    if createHook
+        ptConfirm
+    else
+        print "\n"
+        ptError "Could not create hook"
+        @stop = true
+        return
+    end
 
-        if File.exists?(repositoryFolder)
-            ptError "Repository folder already exists"
-            return
-        end
+    @apps[appName]["repository"] = true
+    saveData
 
-        # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-        # Creates folder:
+  end
 
-        ptNormal "Creating repository folder for #{appName}"
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-        createFolder = system( "sudo -u git mkdir #{repositoryFolder}" )
+  def cloneRepository(appName)
 
-        unless createFolder
-            ptError "Could not create git folder"
-            @stop = true
-            return
-        else
-            ptConfirm
-        end
+    ptNormal "Cloning repository for #{appName}"
 
-        # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-        # Creates git bare respository
+    # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+    # Cloning:
 
-        ptNormal "Creating bare repository for #{appName}"
+    cloneGit = system( "git clone #{@repositoriesFolder}#{appName}.git #{@productionFolder}#{appName}" )
 
-        createGit = system( "sudo -u git git init #{repositoryFolder}/ --bare" )
+    if cloneGit == true
+      ptConfirm
+    else
+      ptError "Repository could not be cloned"
+      @stop = true
 
-        unless createGit
-            ptError "Could not create git repository"
-            @stop = true
-            return
-        else
-            ptConfirm
-        end
-
-        # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-        # Saves the post-update hook:
-
-        ptNormal "Creating hooks for #{appName}"
-
-        createHook = system( "rvmsudo -u git ruby /home/git/scripts/createHook.rb #{appName}" )
-
-        if createHook
-            ptConfirm
-        else
-            print "\n"
-            ptError "Could not create hook"
-            @stop = true
-            return
-        end
-
-        @apps[appName]["repository"] = true
-        saveData
+      return
 
     end
 
-    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+    # Permissions to 775:
 
-    def cloneRepository appName
+    ptNormal "Changing repository's permissions"
 
-        ptNormal "Cloning repository for #{appName}"
+    cloneGit = system( "chmod -R 775 #{@productionFolder}#{appName}" )
 
-        # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-        # Cloning:
+    if cloneGit == true
+      ptConfirm
+    else
+      ptError "Could not change repository's permissions"
+      @stop = true
 
-        cloneGit = system( "git clone #{@repositoriesFolder}#{appName}.git #{@productionFolder}#{appName}" )
-
-        if cloneGit == true
-            ptConfirm
-        else
-            ptError "Repository could not be cloned"
-            @stop = true
-            return
-        end
-
-        # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-        # Permissions to 775:
-
-        ptNormal "Changing repository's permissions"
-
-        cloneGit = system( "chmod -R 775 #{@productionFolder}#{appName}" )
-
-        if cloneGit == true
-            ptConfirm
-        else
-            ptError "Could not change repository's permissions"
-            @stop = true
-            return
-        end
+      return
 
     end
 
-    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  end
 
-    def availNginxConfigFile appName
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    def availNginxConfigFile(appName)
 
         # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
         # Set variables for template:
@@ -333,7 +350,7 @@ class DeploymentActions
 
     end
 
-    def enableNginxConfigFile appName
+    def enableNginxConfigFile(appName)
 
         nginxConfigFile = "#{@nginxAvailableFolder}#{appName}.conf"
         nginxConfigLink = "#{@nginxEnabledFolder}#{appName}.conf"
@@ -365,7 +382,7 @@ class DeploymentActions
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    def deleteNginxConfigFile appName
+    def deleteNginxConfigFile(appName)
 
         nginxConfigFile = "#{@nginxAvailableFolder}#{appName}.conf"
         nginxConfigLink = "#{@nginxEnabledFolder}#{appName}.conf"
@@ -411,7 +428,7 @@ class DeploymentActions
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     
-    def saveThinConfigFile appName
+    def saveThinConfigFile(appName)
 
         ptNormal "Saving Thin configuration for #{appName}"
         appPorts = @apps[appName]["ports"]
@@ -432,7 +449,7 @@ class DeploymentActions
 
      #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    def deleteThinConfigFile appName
+    def deleteThinConfigFile(appName)
 
         ptNormal "Deleting Thin configuration for #{appName}"
         thinCmd = system( "rm /etc/thin/#{appName}.yml" ) #sudo
@@ -473,7 +490,7 @@ class DeploymentActions
     end
 
 
-    def startThin appName
+    def startThin(appName)
         command = system( "thin start -C /etc/thin/#{appName}.yml" )
         unless command
             ptError "Could not stop Thin"
@@ -483,7 +500,7 @@ class DeploymentActions
         end
     end
 
-    def stopThin appName
+    def stopThin(appName)
         command = system( "thin stop -C /etc/thin/#{appName}.yml" )
         unless command
             ptError "Could not stop Thin"
@@ -540,21 +557,21 @@ class DeploymentActions
     #---------------------------------------------------------------------------
     # Database methods
 
-    def checkDbUser dbUser
+    def checkDbUser(dbUser)
         action = system( "sudo -u postgres psql -c '\\du' | grep #{dbUser}" )
     end
 
-    def createDbUser dbUser, dbPassword
+    def createDbUser(dbUser, dbPassword)
         action = system( "echo \"CREATE ROLE #{dbUser} WITH LOGIN ENCRYPTED PASSWORD '#{dbPassword}';\" | sudo -u postgres psql" )
     end
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    def checkDb dbName
+    def checkDb(dbName)
         dbExists = system( "sudo -u postgres psql -c '\\l' | grep #{dbName}" )
     end
 
-    def createProductionDb dbUser, dbName
+    def createProductionDb(dbUser, dbName)
         action = system( "sudo -u postgres createdb -O #{dbUser} #{dbName}" )
     end
 
@@ -582,7 +599,7 @@ class DeploymentActions
 
     # Creates a new application
     #
-    def create appName, appURL, appPorts
+    def create(appName, appURL, appPorts)
         
         # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
         # Check for errors:
@@ -654,7 +671,7 @@ class DeploymentActions
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Check database information and create it if needed
     #
-    def deployDatabase appName
+    def deployDatabase(appName)
 
         # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
         # Check data:
@@ -778,7 +795,7 @@ class DeploymentActions
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Deploy application
     #
-    def deploy appName
+    def deploy(appName)
 
         ptGreen "[Checking data]"
 
@@ -880,7 +897,7 @@ class DeploymentActions
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Rewrites the config files and resets thin
     #
-    def reset appName
+    def reset(appName)
 
       if @apps[appName]["online"]
         
@@ -914,7 +931,7 @@ class DeploymentActions
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Sets new value in the apps hash
     #
-    def set appName, key, value
+    def set(appName, key, value)
         @apps[appName][key] = value
         saveData
         resetAll
@@ -923,7 +940,7 @@ class DeploymentActions
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Deletes configuration files and stops the application
     #
-    def disable appName
+    def disable(appName)
 
         unless @apps[appName]["online"]
             ptError "#{appName.capitalize} already offline"
@@ -950,7 +967,7 @@ class DeploymentActions
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    def destroy appName
+    def destroy(appName)
         disable appName
         action = system( "rm -rf #{@productionFolder}#{appName} && sudo -u git rm -rf #{@repositoriesFolder}#{appName}.git" )
         @apps.delete(appName)
