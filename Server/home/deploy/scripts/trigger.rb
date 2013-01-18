@@ -16,5 +16,9 @@ if ARGV[0] == 'destroy'
 end
 
 if ARGV[0] == 'deploy'
-    deployer.deploy ARGV[1]
+    deployer.deploy(ARGV[1])
+end
+
+if ARGV[0] == 'resethard'
+    deployer.resethard
 end

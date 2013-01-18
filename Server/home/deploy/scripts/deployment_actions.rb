@@ -66,7 +66,7 @@ class DeploymentActions
     @deployerUser = "deploy"
     @gitUser      = "git"
 
-    @dataFile             = '/home/#{@deployerUser}/data/apps'
+    @dataFile             = "/home/#{@deployerUser}/data/apps"
     @repositoriesFolder   = "/home/#{@gitUser}/repositories/"
     @templatesFolder      = "/home/#{@deployerUser}/templates/"
     @productionFolder     = "/var/www/"
@@ -149,14 +149,12 @@ class DeploymentActions
 
   def loadData
 
-    if File.exists?(@dataFile)
-      @apps = Marshal.load File.read(@dataFile)
-      print "\r"
-      ptGreen("Loading list of apps")
-    else
+    unless File.exists?(@dataFile)
       @apps = Hash.new
       print "\r"
-      ptGreen("Created new list of apps")
+      ptNormal("List of apps unavailable")
+    else
+      @apps = Marshal.load File.read(@dataFile)
     end
 
   end
@@ -244,7 +242,7 @@ class DeploymentActions
 
     ptNormal "Creating hooks for #{appName}"
 
-    createHook = system("sudo -u #{@gitUser} ruby /home/#{@gitUser}/scripts/createHook.rb #{appName}")
+    createHook = system("sudo -u #{@gitUser} /usr/local/rvm/bin/ruby /home/#{@gitUser}/scripts/createHook.rb #{appName}")
 
     if createHook
         ptConfirm
@@ -597,8 +595,6 @@ class DeploymentActions
     if appPorts.nil?
       appPorts = 1
     end
-
-    loadData
 
     unless @apps[appName].nil?
       ptError "There is already an app with this name"
@@ -977,5 +973,12 @@ class DeploymentActions
     saveData
     ptGreen "#{appName.capitalize} destroyed!"
   end
+
+  #
+
+  # def resethard
+  #   system( "rm -rf #{@productionFolder}*" )
+  #   system( "rm -rf #{@productionFolder}*" )
+  # end
 
 end
