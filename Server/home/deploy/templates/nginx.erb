@@ -3,11 +3,11 @@ upstream thin_<%= appName %> {
 
 server {
     listen 80;
-    server_name .<%= appUrl %>;
-  
+    server_name .<%= appUrl %> *.<%= appUrl %>;
+
     access_log /var/log/nginx/<%= appName %>.access.log;
     error_log  /var/log/nginx/<%= appName %>.error.log;
-  
+
     root /var/www/<%= appName %>;
 
     index index.php index.html index.htm;
@@ -21,7 +21,7 @@ server {
     }
 
     # Serving images and files:
-    location ~* ^.+.(jpg|jpeg|gif|css|png|js|ico|xml|zip|pdf)$ {
+    location ~* ^.+.(jpg|jpeg|gif|css|png|js|ico|xml|zip|pdf|woff|ttf)$ {
       root /var/www/<%= appName %>/public;
     }
 
@@ -42,7 +42,7 @@ server {
         break;
       }
     }
-  
+
     error_page 500 502 503 504 /50x.html;
     location = /50x.html {
       root html;
