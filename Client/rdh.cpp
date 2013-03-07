@@ -42,7 +42,7 @@ int main (int argc, const char * argv[]) {
 
   // Basic stuff:
 
-  char temp[512];
+  char command[512];
   char user[16]    = "bot";
   char server[64]  = "ubuntu12";
   char ruby[32]    = "/usr/local/rvm/bin/ruby";
@@ -57,9 +57,9 @@ int main (int argc, const char * argv[]) {
   char ncl[16] = "\033[0m"; //No colour
 
   // Variables variables?
-  char appName[32] = "-1";
-  char appUrl [64] = "-1";
-  char servers[3]  = "-1";
+  string appName = "";
+  string appAddr = "";
+  string servers = "";
 
   cout << endl << gre;
   printf("Server: %s\n", server);
@@ -70,10 +70,10 @@ int main (int argc, const char * argv[]) {
   // Check arguments number
   if ( argc == 1 ) {
     cout << cya << endl;
-    printf("Use: rdh <action>\n");
-    printf("      -  list\n");
-    printf("      -  create\n");
-    printf("      -  delete\n");
+    printf("Usage: %s COMMAND [--app APP] [command-specific-options]\n\n", argv[0]);
+    printf("Primary help topics, type \"%s help TOPIC\" for more details:\n\n", argv[0]);
+    printf("  list      #  list installed applications\n");
+    printf("  apps      #  manage apps (create, destroy)\n");
     cout << ncl << endl;
     return 1;
   }
@@ -81,38 +81,55 @@ int main (int argc, const char * argv[]) {
   // Parsing commands
   for (int i = 1; i < argc; i++) {
 
-    if (i + 1 != argc) // Check that we haven't finished parsing already
-      if (argv[i] == "-a") {
-        appName = argv[i + 1];
-      } else if (argv[i] == "-u") {
-        appUrl = argv[i + 1];
-      } else if (argv[i] == "-s") {
-        servers = argv[i + 1];
-      }
+    // printf("%d: %s\n", i, argv[i]);
+    // printf("%d: %s\n", i+1, argv[i+1]);
 
+    // if (i + 1 != argc) // Check that we haven't finished parsing already
+      if (string(argv[i]) == "-a")
+        appName = argv[i + 1];
+      else if (string(argv[i]) == "-u")
+        appAddr = argv[i + 1];
+      else if (string(argv[i]) == "-s")
+        servers = argv[i + 1];
+      
   }
 
   // Second parsing
-  if ( strcmp(appName, "-1") ) appName = argv[2];
+  if ( appName.empty() )
+    if ( argv[2] ) appName = argv[2];
+  if ( appAddr.empty() )
+    if ( argv[3] ) appAddr = argv[3];
+  if ( servers.empty() )
+    if ( argv[4] ) servers = argv[4];
 
   // Assembling command
-  if ( strcmp(argv[1], "list") == 0 )
-    snprintf(temp, 512, "ssh %s@%s \"%s %s list\"", user, server, ruby, trigger);
-  
-  if ( strcmp(argv[1], "create") == 0 ){
-    printf("appName: %s\n", appName);
-    printf("appUrl : %s\n", appUrl); 
-    printf("servers: %s\n", servers);
-  }
-    printf("2: %s", argv[2]);
-    // snprintf(temp, 512, "ssh %s@%s \"%s %s create %s %s\"", user, server, ruby, trigger, argv[2], argv[2]);
-  
-  if ( strcmp(argv[1], "check") == 0 )
-    printf("2: %s", argv[2]);
-    // snprintf(temp, 512, "ssh %s@%s \"%s %s check %s\"", user, server, ruby, trigger, argv[2]);
+  if ( strcmp(argv[1], "restart") == 0 ){
+  // Restart thin / nginx
 
+    cout << "Not done yet" << endl;
+
+  } else if ( strcmp(argv[1], "list") == 0 ){
+  // List
+
+    snprintf(command, 512, "ssh %s@%s \"%s %s list\"", user, server, ruby, trigger);
+
+  } else if ( strcmp(argv[1], "create") == 0 ){
+  // Create
+
+    if ( servers.empty() )
+      snprintf(command, 512, "ssh %s@%s \"%s %s create %s %s\"", user, server, ruby, trigger, appName.c_str(), appAddr.c_str());
+    else
+      snprintf(command, 512, "ssh %s@%s \"%s %s create %s %s %s\"", user, server, ruby, trigger, appName.c_str(), appAddr.c_str(), servers.c_str());
+
+  } else if ( strcmp(argv[1], "check") == 0 ){
+  // Check
+
+    snprintf(command, 512, "ssh %s@%s \"%s %s check %s\"", user, server, ruby, trigger, appName.c_str());
+  
+  }
   // Executing
-  // system((char *)temp);
+  // system((char *)command);
+  printf("%s\n", command);
 
   return 0;
 }
