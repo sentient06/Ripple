@@ -35,6 +35,9 @@
 int main (int argc, const char * argv[]) {
 
     char temp[512];
+    string str = "testing";
+
+
 
     // rdh list   name url
     // rdh test   name url --
@@ -56,7 +59,13 @@ int main (int argc, const char * argv[]) {
     
     if ( argc > 1 ) {
         
-        if ( strcmp(argv[1], "create") == 0 ) {
+        if ( strcmp(argv[1], "list") == 0 ) {
+
+            printf("List: %s\n", str);
+
+            // snprintf(temp, 512, "ssh bot@ubuntuRails \"sh \\$HOME/scripts/createApp.sh %s %s\"", argv[3], argv[2]);
+        
+        } else if ( strcmp(argv[1], "create") == 0 ) {
             
             // Create action:
             
@@ -124,7 +133,10 @@ int main (int argc, const char * argv[]) {
         system((char *)temp);
         
     } else {
-        printf("Use: rdh <create|delete>\n");
+        printf("Use: rdh <action>\n");
+        printf("      -  list\n");
+        printf("      -  create\n");
+        printf("      -  delete\n");
     }
     
     return 0;
