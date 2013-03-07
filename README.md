@@ -6,3 +6,5 @@ These files are intended to be used in a ruby on rails in production environment
 The workflow is inspired by Heroku.
 
 Please refer to the wiki on Github for details.
+
+test 1
