@@ -45,8 +45,8 @@ int main (int argc, const char * argv[]) {
   char command[512];
   char user[16]    = "bot";
   char server[64]  = "ubuntu12";
-  char ruby[32]    = "/usr/local/rvm/bin/ruby";
-  char trigger[64] = "/home/deploy/scripts/trigger.rb"; 
+  char action[32]  = "sh";
+  char trigger[64] = "\\$HOME/trigger.sh"; 
 
   char red[16] = "\033[0;31m";
   char gre[16] = "\033[0;32m";
@@ -80,6 +80,7 @@ int main (int argc, const char * argv[]) {
 
   //----------------------------------------------------------------------------
   // Parsing commands
+
   for (int i = 1; i < argc; i++) {
 
     // printf("%d: %s\n", i, argv[i]);
@@ -116,7 +117,9 @@ int main (int argc, const char * argv[]) {
       
   }
 
+  //----------------------------------------------------------------------------
   // Second parsing
+
   if ( appName.empty() )
     if ( argv[2] ) appName = argv[2];
   if ( appAddr.empty() )
@@ -124,36 +127,55 @@ int main (int argc, const char * argv[]) {
   if ( servers.empty() )
     if ( argv[4] ) servers = argv[4];
 
+  //----------------------------------------------------------------------------
   // Assembling command
-  if ( strcmp(argv[1], "restart") == 0 ){
-  // Restart thin / nginx
-    if (appName.empty())
-      cout << "Restarting everything" << endl;
-    else
-      printf("Restarting %s", appName.c_str());
+
+  if ( strcmp(argv[1], "help") == 0 ){
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // Help
+ 
+      cout << "Help unfinished" << endl;
+
+
+  } else if ( strcmp(argv[1], "restart") == 0 ){
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // Restart thin / nginx
+ 
+    if (appName.empty()){
+      cout << "Restarting all apps...\n" << endl;
+      snprintf(command, 512, "ssh %s@%s \"%s %s restart\"", user, server, action, trigger);
+    } else {
+      printf("Restarting %s...\n", appName.c_str());
+      snprintf(command, 512, "ssh %s@%s \"%s %s restart %s\"", user, server, action, trigger, appName.c_str() );
+    }
 
   } else if ( strcmp(argv[1], "list") == 0 ){
-  // List
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // List
 
-    snprintf(command, 512, "ssh %s@%s \"%s %s list\"", user, server, ruby, trigger);
+    snprintf(command, 512, "ssh %s@%s \"%s %s list\"", user, server, action, trigger);
 
   } else if ( strcmp(argv[1], "create") == 0 ){
-  // Create
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // Create
 
     if ( servers.empty() )
-      snprintf(command, 512, "ssh %s@%s \"%s %s create %s %s\"", user, server, ruby, trigger, appName.c_str(), appAddr.c_str());
+      snprintf(command, 512, "ssh %s@%s \"%s %s create %s %s\"", user, server, action, trigger, appName.c_str(), appAddr.c_str());
     else
-      snprintf(command, 512, "ssh %s@%s \"%s %s create %s %s %s\"", user, server, ruby, trigger, appName.c_str(), appAddr.c_str(), servers.c_str());
+      snprintf(command, 512, "ssh %s@%s \"%s %s create %s %s %s\"", user, server, action, trigger, appName.c_str(), appAddr.c_str(), servers.c_str());
 
   } else if ( strcmp(argv[1], "check") == 0 ){
-  // Check
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // Check
 
-    snprintf(command, 512, "ssh %s@%s \"%s %s check %s\"", user, server, ruby, trigger, appName.c_str());
+    snprintf(command, 512, "ssh %s@%s \"%s %s check %s\"", user, server, action, trigger, appName.c_str());
   
   }
+
+  //----------------------------------------------------------------------------
   // Executing
-  // system((char *)command);
   printf("%s\n", command);
+  system((char *)command);
 
   return 0;
 }
