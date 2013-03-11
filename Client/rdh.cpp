@@ -78,6 +78,7 @@ int main (int argc, const char * argv[]) {
     return 1;
   }
 
+  //----------------------------------------------------------------------------
   // Parsing commands
   for (int i = 1; i < argc; i++) {
 
@@ -85,12 +86,33 @@ int main (int argc, const char * argv[]) {
     // printf("%d: %s\n", i+1, argv[i+1]);
 
     // if (i + 1 != argc) // Check that we haven't finished parsing already
-      if (string(argv[i]) == "-a")
+      if (string(argv[i]) == "-a" || string(argv[i]) == "--app") {
+
+        if (argv[i+1] == NULL || string(argv[i+1]).substr(0,1) == "-" ) { // || string(argv[i+1]).find("-") > 0) {
+          cout << red << "Please define a name for the application." << ncl << endl << endl;
+          return 1;
+        }
         appName = argv[i + 1];
-      else if (string(argv[i]) == "-u")
+
+      } else if (string(argv[i]) == "-u" || string(argv[i]) == "--url") {
+
+        if (argv[i+1] == NULL || string(argv[i+1]).substr(0,1) == "-") {
+          cout << red << "Please define the URL." << ncl << endl << endl;
+          return 1;
+        }
         appAddr = argv[i + 1];
-      else if (string(argv[i]) == "-s")
-        servers = argv[i + 1];
+
+      } else if (string(argv[i]) == "-s" || string(argv[i]) == "--servers") {
+
+        if (argv[i+1] == NULL || string(argv[i+1]).substr(0,1) == "-") {
+          cout << yel << "No number of servers, assuming 1." << ncl << endl << endl;
+          servers = "1";
+        } else {
+          servers = argv[i + 1];
+        }
+        
+
+      }
       
   }
 
@@ -105,8 +127,10 @@ int main (int argc, const char * argv[]) {
   // Assembling command
   if ( strcmp(argv[1], "restart") == 0 ){
   // Restart thin / nginx
-
-    cout << "Not done yet" << endl;
+    if (appName.empty())
+      cout << "Restarting everything" << endl;
+    else
+      printf("Restarting %s", appName.c_str());
 
   } else if ( strcmp(argv[1], "list") == 0 ){
   // List
