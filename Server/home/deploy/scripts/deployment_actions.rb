@@ -268,7 +268,15 @@ class DeploymentActions
 
     # Cloning:
 
+    # require 'open3'
     cloneGit = system( "git clone #{@repositoriesFolder}#{appName}.git #{@productionFolder}#{appName}" )
+    # @stdin, @stdout, @stderr = Open3.popen3('git clone', "#{@repositoriesFolder}#{appName}.git", "#{@productionFolder}#{appName}")
+    # @stdout.gets(nil)
+    # @stderr.gets(nil)
+
+    # @stdin.close
+    # @stdout.close
+    # @stderr.close
 
     if cloneGit == true
       ptConfirm
