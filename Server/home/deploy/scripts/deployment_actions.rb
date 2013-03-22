@@ -123,16 +123,14 @@ class DeploymentActions
 
   def ptNormal(msg)
 
-    print "#{@yel}#{msg}...#{@ncl}\n"
+    print "#{@yel}#{msg}...#{@ncl}"
     print "\r"
     @lastMsg = msg
 
   end
 
   def ptConfirm
-
     puts "#{@gre}#{@lastMsg}. [ok]#{@ncl}"
-
   end
 
   def ptGreen(msg)
