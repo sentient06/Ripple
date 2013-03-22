@@ -9,7 +9,9 @@ echo "${gre}Post receive hook: Updating <%= appName %>...${yel}"
 
 export GIT_WORK_TREE=/var/www/<%= appName %>
 cd $GIT_WORK_TREE
-sudo -u deploy git pull
-sudo -u deploy git checkout master -f
+#sudo -u deploy git pull
+#sudo -u deploy git checkout master -f
+sudo -u deploy git fetch --all followed
+sudo -u deploy git reset --hard origin/master
 /usr/local/rvm/bin/rvmsudo -u deploy /usr/local/rvm/bin/ruby /home/deploy/scripts/trigger.rb deploy <%= appName %>
 echo "${ncl}"

@@ -61,6 +61,9 @@ class DeploymentActions
     @red = "\033[0;31m"
     @gre = "\033[0;32m"
     @yel = "\033[0;33m"
+    @blu = "\033[0;34m"
+    @pur = "\033[0;35m"
+    @cya = "\033[0;36m"
     @ncl = "\033[0m" #No colour
 
     @deployerUser = "deploy"
@@ -141,6 +144,16 @@ class DeploymentActions
   def ptError(msg)
 
     puts "\n#{@red}[Error] #{msg}!#{@ncl}\n"
+
+  end
+
+  #-------------------------------------------------------------------------------
+  # System actions
+
+  def systemCmd(commandStr)
+
+    print "Executing '#{commandStr}'..."
+    output = `#{commandStr} 2>&1`
 
   end
 
@@ -487,7 +500,7 @@ class DeploymentActions
   def startThin(appName)
     command = system( "thin start -C /etc/thin/#{appName}.yml" )
     unless command
-      ptError "Could not stop Thin"
+      ptError "Could not start Thin"
       return
     else
       # ptConfirm
@@ -677,9 +690,7 @@ class DeploymentActions
     unless File.exists?(dbConfigFile)
       ptError "Database file does not exist"
       @stop = true
-
       return
-
     end
 
     dbDetails = YAML.load_file(dbConfigFile)
@@ -693,9 +704,7 @@ class DeploymentActions
 
     if productionDB.nil?
       ptNormal "Nothing to do with the database"
-
       return
-
     end
 
     dbAdapter = productionDB['adapter']
@@ -706,9 +715,7 @@ class DeploymentActions
       ptGreen "Sqlite3 detected!"
       @apps[appName]["db"] = true
       saveData
-
       return
-
     end
 
     # If PostgreSQL, go on:
@@ -720,9 +727,7 @@ class DeploymentActions
     if dbPass.nil?
       ptNormal "No password, ignoring database"
       @stop = true
-
       return
-
     end
 
     ptNormal "Name: #{dbName}"
@@ -744,9 +749,7 @@ class DeploymentActions
       unless newUser
         ptError "Unable to create DB user"
         @stop = true
-
         return
-
       else
         userExistent = true
         ptConfirm
@@ -771,9 +774,7 @@ class DeploymentActions
       unless newDB
         ptError "Unable to create database"
         @stop = true
-
         return
-
       else
         dbExistent = true
         ptConfirm
@@ -803,21 +804,15 @@ class DeploymentActions
           ptGreen "All seems to be fine, yay!"
         else
           ptError "Nginx configuration not saved"
-          
           return
-
         end
       else
         ptError "Thin configuration not saved"
-        
         return
-
       end
     else
       ptError "Repository non-existent"
-      
       return
-
     end
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -827,9 +822,9 @@ class DeploymentActions
     # If already online, stop thin.
 
     if @apps[appName]["online"]
-      # stopNginx
+      stopNginx
       stopThin(appName)
-      # startNginx
+      startNginx
       @apps[appName]["online"] = false
       saveData
     end
@@ -841,9 +836,7 @@ class DeploymentActions
     if @apps[appName]["db"] == false
       deployDatabase appName
       if @stop == true
-
         return
-
       end
     end
 
@@ -857,9 +850,7 @@ class DeploymentActions
 
     unless deployStep2
       ptError "Could not deploy step 2 - bundle package"
-
       return
-
     else
       ptConfirm
     end
@@ -869,9 +860,7 @@ class DeploymentActions
 
     unless deployStep3
       ptError "Could not deploy step 3 - bundle install"
-      
       return
-
     else
       ptConfirm
     end
@@ -884,8 +873,16 @@ class DeploymentActions
     if migrationsNumber > 0
       ptNormal "#{migrationsNumber} migrations found."
       ptNormal "Migrating"
+
       deployStep4 = system("RAILS_ENV=production rake db:migrate")
-      ptConfirm
+      
+      unless deployStep4
+        ptError "Could not deploy step 4 - database migrate"
+        return
+      else
+        ptConfirm
+      end
+
     end
 
     ptNormal "Precompile assets"
@@ -893,9 +890,7 @@ class DeploymentActions
 
     unless deployStep5
       ptError "Could not deploy step 5 - assets precompile"
-      
       return
-
     else
       ptConfirm
     end
