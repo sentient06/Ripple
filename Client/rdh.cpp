@@ -61,7 +61,7 @@ int main (int argc, const char * argv[]) {
   string appAddr = "";
   string servers = "";
 
-  cout << endl << gre;
+  cout << endl << cya;
   printf("Server: %s\n", server);
   cout << ncl;
 
@@ -174,7 +174,10 @@ int main (int argc, const char * argv[]) {
 
   //----------------------------------------------------------------------------
   // Executing
-  printf("%s\n", command);
+  cout << endl << pur;
+  printf("%s", command);
+  cout << ncl << endl;
+
   system((char *)command);
 
   return 0;

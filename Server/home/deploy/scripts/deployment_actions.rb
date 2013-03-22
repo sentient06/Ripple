@@ -567,7 +567,7 @@ class DeploymentActions
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-  # List all applications names, ports used and url.
+  # Lists all applications names, ports used and url.
   #
   def list
     # Iterate through all apps and print
@@ -581,6 +581,33 @@ class DeploymentActions
     @apps.each {|key, value|
       printf(" [#{@gre}%-#{len}s#{@ncl}] - #{@gre}%2d#{@ncl} ports starting on #{@gre}%4d#{@ncl}, url: #{@gre}%s#{@ncl}\n", key.to_s, value['ports'], value['first'], value['url'])
     }
+
+    print "\n"
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+  #
+  def appStatus(appName)
+
+    print @apps[appName]
+    print "\nURL ........... "
+    print @apps[appName]["url"]
+    print "\nPorts ......... "
+    print @apps[appName]["ports"]
+    print "\nFirst port .... "
+    print @apps[appName]["first"]
+    print "\nRepository .... "
+    print @apps[appName]["repository"]
+    print "\nThin config ... "
+    print @apps[appName]["thin"]
+    print "\nAvailable ..... "
+    print @apps[appName]["available"]
+    print "\nEnabled ....... "
+    print @apps[appName]["enabled"]
+    print "\nDatabase ...... "
+    print @apps[appName]["db"]
+    print "\nOnline ........ "
+    print @apps[appName]["online"]
 
     print "\n"
   end
