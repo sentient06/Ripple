@@ -605,10 +605,10 @@ class DeploymentActions
       return
     end
 
-    print "\n"
-    ptStatic "Creating application '#{appName}'"
-    ptStatic "-----------------------"
-    ptStatic @dashes[0, appName.length]
+    dashes = "-----------------------"
+    print "\n#{@cya}Creating application '#{appName}'\n"
+    print dashes[0, appName.length]
+    print "#{dashes}\n"
 
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Create empty application:
