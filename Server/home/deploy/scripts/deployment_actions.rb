@@ -572,10 +572,11 @@ class DeploymentActions
   def list
     # Iterate through all apps and print
     @apps.each {|key, value|
-      print @gre
-      printf(" - %.15s - %d ports (%d) - %s\n", key.to_s, value['ports'], value['first'], value['url'])
-      print @ncl
+      # print @gre
+      printf(" [#{@gre}%-15s#{@ncl}] - #{@gre}%3d#{@ncl} ports starting on #{@gre}%4d#{@ncl}, url: #{@gre}%s#{@ncl}\n", key.to_s, value['ports'], value['first'], value['url'])
+      # print @ncl
     }
+
     print "\n"
   end
 
