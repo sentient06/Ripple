@@ -969,11 +969,13 @@ class DeploymentActions
     puts "newValues = #{newValues}"
 
     # newValues = "url:www.me.com,pts:3"
-    # newHash = newValues.split(',').inject(Hash.new{|h,k|h[k]=[]}) do |h, s|
-    #   k,v = s.split(':')
-    #   h[k] = v.to_i == 0 ? v : v.to_i
-    #   h
-    # end
+    newHash = newValues.split(',').inject(Hash.new{|h,k|h[k]=[]}) do |h, s|
+      k,v = s.split(':')
+      h[k] = v.to_i == 0 ? v : v.to_i
+      h
+    end
+
+    puts newHash
 
     # newHash.each {|key, value|
 

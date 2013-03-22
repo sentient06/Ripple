@@ -266,7 +266,7 @@ int main (int argc, const char * argv[]) {
   printf("cmd: [%s]", fullCmd);
   cout << ncl << endl;
 
-  // system((char *)fullCmd);
+  system((char *)fullCmd);
 
   return 0;
 }
