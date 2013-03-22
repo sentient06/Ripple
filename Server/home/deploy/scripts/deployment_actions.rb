@@ -221,56 +221,50 @@ class DeploymentActions
 
     if File.exists?(repositoryFolder)
       ptError "Repository folder already exists"
-
       return
-
     end
 
     # Creates folder:
 
     ptNormal "Creating repository folder for #{appName}"
 
-    createFolder = system("sudo -u #{@gitUser} mkdir #{repositoryFolder}")
+    createFolder = systemCmd("sudo -u #{@gitUser} mkdir #{repositoryFolder}")
 
-    unless createFolder
+    if createFolder.success?
+      ptConfirm
+    else
       ptError "Could not create git folder"
       @stop = true
-
-      return
-
-    else
-      ptConfirm
+      return      
     end
 
     # Creates git bare respository
 
     ptNormal "Creating bare repository for #{appName}"
 
-    createGit = system("sudo -u #{@gitUser} git init #{repositoryFolder}/ --bare")
+    createGit = systemCmd("sudo -u #{@gitUser} git init #{repositoryFolder}/ --bare")
 
-    unless createGit
-        ptError "Could not create git repository"
-        @stop = true
-        return
+    if createGit.success?
+      ptConfirm
     else
-        ptConfirm
+      ptError "Could not create git repository"
+      @stop = true
+      return
     end
 
     # Saves the post-update hook:
 
     ptNormal "Creating hooks for #{appName}"
 
-    createHook = system("sudo -u #{@gitUser} /usr/local/rvm/bin/ruby /home/#{@gitUser}/scripts/createHook.rb #{appName}")
+    createHook = systemCmd("sudo -u #{@gitUser} /usr/local/rvm/bin/ruby /home/#{@gitUser}/scripts/createHook.rb #{appName}")
 
-    if createHook
-        ptConfirm
+    if createHook.success?
+      ptConfirm
     else
-        print "\n"
-        ptError "Could not create hook"
-        @stop = true
-
-        return
-
+      print "\n"
+      ptError "Could not create hook"
+      @stop = true
+      return
     end
 
     @apps[appName]["repository"] = true
@@ -287,7 +281,7 @@ class DeploymentActions
     # Cloning:
 
     # require 'open3'
-    cloneGit = system( "git clone #{@repositoriesFolder}#{appName}.git #{@productionFolder}#{appName}" )
+    cloneGit = systemCmd( "git clone #{@repositoriesFolder}#{appName}.git #{@productionFolder}#{appName}" )
     # @stdin, @stdout, @stderr = Open3.popen3('git clone', "#{@repositoriesFolder}#{appName}.git", "#{@productionFolder}#{appName}")
     # @stdout.gets(nil)
     # @stderr.gets(nil)
@@ -296,30 +290,26 @@ class DeploymentActions
     # @stdout.close
     # @stderr.close
 
-    if cloneGit == true
+    if cloneGit.success?
       ptConfirm
     else
       ptError "Repository could not be cloned"
       @stop = true
-
       return
-
     end
 
     # Permissions to 775:
 
     ptNormal "Changing repository's permissions"
 
-    cloneGit = system("chmod -R 775 #{@productionFolder}#{appName}")
+    cloneGit = systemCmd("chmod -R 775 #{@productionFolder}#{appName}")
 
-    if cloneGit == true
+    if cloneGit.success?
       ptConfirm
     else
       ptError "Could not change repository's permissions"
       @stop = true
-
       return
-
     end
 
   end
@@ -352,9 +342,7 @@ class DeploymentActions
       ptConfirm
     else
       ptError "Could not save Nginx configuration"
-
       return
-
     end
 
     @apps[appName]["available"] = true
@@ -371,19 +359,15 @@ class DeploymentActions
     if File.exists?(nginxConfigFile)
       unless File.exists?(nginxConfigLink)
         ptConfirm
-        action = system("ln -s #{nginxConfigFile} #{nginxConfigLink}")
-        unless action
+        action = systemCmd("ln -s #{nginxConfigFile} #{nginxConfigLink}")
+        unless action.success?
           ptError "Could not symlink Nginx configuration file"
-
           return
-
         end
       end
     else
       ptError "Config file non-existent"
-
       return
-
     end
 
     @apps[appName]["enabled"] = false
@@ -400,35 +384,34 @@ class DeploymentActions
 
     if File.exists?(nginxConfigLink)
       ptNormal "Deleting symlink for #{appName}"
-      nginxCmd1 = system("rm #{nginxConfigLink}")
+      nginxCmd1 = systemCmd("rm #{nginxConfigLink}")
 
-      if nginxCmd1 == true
+      if nginxCmd1.success?
         @apps[appName]["enabled"] = false
         saveData
         ptConfirm
       else
         ptError "Could not delete configuration symlink for #{appName}"
-        
         return
-
       end
     else
       ptGreen "No symlink found."
     end
 
     if File.exists?(nginxConfigFile)
+
       ptNormal "Deleting Nginx configuration for #{appName}"
-      nginxCmd2 = system("rm #{nginxConfigFile}")
-      if nginxCmd2 == true
+      nginxCmd2 = systemCmd("rm #{nginxConfigFile}")
+
+      if nginxCmd2.success?
         @apps[appName]["available"] = false
         saveData
         ptConfirm
       else
         ptError "Could not delete configuration file for #{appName}"
-        
         return
-
       end
+
     else
       ptGreen "No config file found."
     end
@@ -442,15 +425,13 @@ class DeploymentActions
     ptNormal "Saving Thin configuration for #{appName}"
     appPorts = @apps[appName]["ports"]
     appFirst = @apps[appName]["first"]
-    thinCommand = system("thin config -C /etc/thin/#{appName}.yml -c /var/www/#{appName} --servers #{appPorts} -e production -p #{appFirst}")
+    thinCommand = systemCmd("thin config -C /etc/thin/#{appName}.yml -c /var/www/#{appName} --servers #{appPorts} -e production -p #{appFirst}")
 
-    if thinCommand == true
+    if thinCommand.success?
       ptConfirm
     else
       ptError "Could not save Thin configuration for #{appName}"
-      
       return
-
     end
 
     @apps[appName]["thin"] = true
@@ -463,15 +444,13 @@ class DeploymentActions
   def deleteThinConfigFile(appName)
 
     ptNormal "Deleting Thin configuration for #{appName}"
-    thinCmd = system("rm /etc/thin/#{appName}.yml")
+    thinCmd = systemCmd("rm /etc/thin/#{appName}.yml")
 
-    if thinCmd == true
+    if thinCmd.success?
       ptConfirm
     else
       ptError "Could not delete Thin configuration for #{appName}"
-      
       return
-
     end
 
     @apps[appName]["thin"] = false
@@ -482,8 +461,8 @@ class DeploymentActions
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   def startNginx
-    actionNginx = system( "sudo service nginx start" )
-    unless actionNginx
+    actionNginx = systemCmd( "sudo service nginx start" )
+    unless actionNginx.success?
       ptError "Could not start Nginx"
       return
     else
@@ -493,8 +472,8 @@ class DeploymentActions
 
   def stopNginx
     # ptNormal "Stopping Nginx"
-    command = system( "sudo service nginx stop" )
-    unless command
+    command = systemCmd( "sudo service nginx stop" )
+    unless command.success?
       ptError "Could not stop Nginx"
       return
     else
@@ -503,8 +482,8 @@ class DeploymentActions
   end
 
   def startThin(appName)
-    command = system( "thin start -C /etc/thin/#{appName}.yml" )
-    unless command
+    command = systemCmd( "thin start -C /etc/thin/#{appName}.yml" )
+    unless command.success?
       ptError "Could not start Thin"
       return
     else
@@ -513,8 +492,8 @@ class DeploymentActions
   end
 
   def stopThin(appName)
-    command = system( "thin stop -C /etc/thin/#{appName}.yml" )
-    unless command
+    command = systemCmd( "thin stop -C /etc/thin/#{appName}.yml" )
+    unless command.success?
       ptError "Could not stop Thin"
       return
     else
@@ -539,7 +518,7 @@ class DeploymentActions
 
     @apps.each {|key, value|
       if value["online"]
-        command = system("thin stop -C /etc/thin/#{key}.yml")
+        command = systemCmd("thin stop -C /etc/thin/#{key}.yml")
       end
     }
 
@@ -552,7 +531,7 @@ class DeploymentActions
 
     @apps.each {|key, value|
       if value["online"]
-        command = system( "thin start -C /etc/thin/#{key}.yml" )
+        command = systemCmd( "thin start -C /etc/thin/#{key}.yml" )
       end
     }
 
@@ -564,21 +543,21 @@ class DeploymentActions
   # Database methods
 
   def checkDbUser(dbUser)
-    action = system("sudo -u postgres psql -c '\\du' | grep #{dbUser}")
+    action = systemCmd("sudo -u postgres psql -c '\\du' | grep #{dbUser}")
   end
 
   def createDbUser(dbUser, dbPassword)
-    action = system("echo \"CREATE ROLE #{dbUser} WITH LOGIN ENCRYPTED PASSWORD '#{dbPassword}';\" | sudo -u postgres psql")
+    action = systemCmd("echo \"CREATE ROLE #{dbUser} WITH LOGIN ENCRYPTED PASSWORD '#{dbPassword}';\" | sudo -u postgres psql")
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   def checkDb(dbName)
-    dbExists = system("sudo -u postgres psql -c '\\l' | grep #{dbName}")
+    dbExists = systemCmd("sudo -u postgres psql -c '\\l' | grep #{dbName}")
   end
 
   def createProductionDb(dbUser, dbName)
-    action = system("sudo -u postgres createdb -O #{dbUser} #{dbName}")
+    action = systemCmd("sudo -u postgres createdb -O #{dbUser} #{dbName}")
   end
 
   #---------------------------------------------------------------------------
@@ -650,9 +629,7 @@ class DeploymentActions
     createRepository appName # set 'repository'
 
     if @stop == true
-      
       return
-
     end
 
     # Clone repository for further use:
@@ -660,9 +637,7 @@ class DeploymentActions
     cloneRepository appName
 
     if @stop == true
-      
       return
-
     end
 
     # Save server configurations:
@@ -851,23 +826,23 @@ class DeploymentActions
     Dir.chdir "#{@productionFolder}#{appName}"
 
     ptNormal "Executing 'bundle package'"
-    deployStep2 = system("bundle package")
+    deployStep2 = systemCmd("bundle package")
 
-    unless deployStep2
+    if deployStep2.success?
+      ptConfirm
+    else
       ptError "Could not deploy step 2 - bundle package"
       return
-    else
-      ptConfirm
     end
 
     ptNormal "Executing 'bundle install'"
-    deployStep3 = system("bundle install --deployment")
+    deployStep3 = systemCmd("bundle install --deployment")
 
-    unless deployStep3
+    if deployStep3.success?
+      ptConfirm
+    else
       ptError "Could not deploy step 3 - bundle install"
       return
-    else
-      ptConfirm
     end
 
     # Check for migrations!
@@ -879,25 +854,25 @@ class DeploymentActions
       ptNormal "#{migrationsNumber} migrations found."
       ptNormal "Migrating"
 
-      deployStep4 = system("RAILS_ENV=production rake db:migrate")
+      deployStep4 = systemCmd("RAILS_ENV=production rake db:migrate")
       
-      unless deployStep4
+      if deployStep4.success?
+        ptConfirm
+      else
         ptError "Could not deploy step 4 - database migrate"
         return
-      else
-        ptConfirm
       end
 
     end
 
     ptNormal "Precompile assets"
-    deployStep5 = system("rake assets:precompile")
+    deployStep5 = systemCmd("rake assets:precompile")
 
-    unless deployStep5
+    if deployStep5.success?
+      ptConfirm
+    else
       ptError "Could not deploy step 5 - assets precompile"
       return
-    else
-      ptConfirm
     end
 
     # If all is fine, start thin, restart nginx.
@@ -976,10 +951,15 @@ class DeploymentActions
 
   def destroy(appName)
     disable appName
-    action = system( "rm -rf #{@productionFolder}#{appName} && sudo -u git rm -rf #{@repositoriesFolder}#{appName}.git" )
-    @apps.delete(appName)
-    saveData
-    ptGreen "#{appName.capitalize} destroyed!"
+    action = systemCmd( "rm -rf #{@productionFolder}#{appName} && sudo -u git rm -rf #{@repositoriesFolder}#{appName}.git" )
+
+    if action.success?
+      @apps.delete(appName)
+      saveData
+      ptGreen "#{appName.capitalize} destroyed!"
+    else
+      ptError "Problem trying to destroy #{appName}."
+    end
   end
 
   #
