@@ -561,8 +561,13 @@ class DeploymentActions
   # Lists all applications names, ports used and url.
   #
   def list
-    # Iterate through all apps and print
 
+    if @apps.count < 1
+      ptGreen "No applications found."
+      exit
+    end
+
+    # Iterate through all apps and print
     len    = 15
     bigKey = @apps.keys.max { |a, b| a.length <=> b.length }
     len    = bigKey.length

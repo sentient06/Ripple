@@ -54,6 +54,10 @@ void errorAppAddr(){
   cout << red << "Please define the URL." << ncl << endl << endl;
 }
 
+void errorAppAddrAndServer(){
+  cout << red << "Please define the URL and/or the number of ports." << ncl << endl << endl;
+}
+
 void displayHelp(const char * argv[]){
   cout << cya << endl;
   printf("Usage: %s COMMAND [--app APP] [command-specific-options]\n\n", argv[0]);
@@ -63,6 +67,8 @@ void displayHelp(const char * argv[]){
   printf("  apps      #  manage apps (create, destroy)\n");
   cout << ncl << endl;
 }
+
+
 
 int main (int argc, const char * argv[]) {
 
@@ -224,9 +230,7 @@ int main (int argc, const char * argv[]) {
   } else if ( command == "set" ){
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // Set [ url | ports ]
-    // this set app url app.com
     // this set app -u app.com
-    // this set app ports 3
     // this set app -p 3
     // this set app -u app.com -p 3
 
@@ -235,10 +239,12 @@ int main (int argc, const char * argv[]) {
       return 1;
     }
 
-    shellCmd2 += "set " + appName + " ";
+    if ( appAddr.empty() && servers.empty() ){
+      errorAppAddrAndServer();
+    }
 
     if ( !appAddr.empty() ) {
-      cout << "url = " << appAddr.c_str() << endl;
+      // cout << "url = " << appAddr.c_str() << endl;
       shellCmd2 += "url:" + appAddr;
     }
 
@@ -247,9 +253,11 @@ int main (int argc, const char * argv[]) {
     }
 
     if ( !servers.empty() ) {
-      cout << "pts = " << servers.c_str() << endl;
+      // cout << "pts = " << servers.c_str() << endl;
       shellCmd2 += "ports:" + servers;
     }
+
+    snprintf(shellCmd, 512, "set %s %s", appName.c_str(), shellCmd2.c_str());
 
     // if ( servers.empty() )
     //   snprintf(shellCmd, 512, "create %s %s", appName.c_str(), appAddr.c_str());
@@ -258,7 +266,7 @@ int main (int argc, const char * argv[]) {
 
   }
 
-  snprintf(fullCmd, 512, "ssh %s@%s \"%s %s %s\"", user, server, action, trigger, shellCmd2.c_str());
+  snprintf(fullCmd, 512, "ssh %s@%s \"%s %s %s\"", user, server, action, trigger, shellCmd);
 
   //----------------------------------------------------------------------------
   // Executing
