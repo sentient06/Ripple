@@ -589,27 +589,27 @@ class DeploymentActions
   #
   def appStatus(appName)
 
-    print @apps[appName]
-    print "\nURL ........... "
+    print "\n#{@gre}#{appName}"
+    print "\n#{@ncl}URL ........... #{@gre}"
     print @apps[appName]["url"]
-    print "\nPorts ......... "
+    print "\n#{@ncl}Ports ......... #{@gre}"
     print @apps[appName]["ports"]
-    print "\nFirst port .... "
+    print "\n#{@ncl}First port .... #{@gre}"
     print @apps[appName]["first"]
-    print "\nRepository .... "
+    print "\n#{@ncl}Repository .... #{@gre}"
     print @apps[appName]["repository"]
-    print "\nThin config ... "
+    print "\n#{@ncl}Thin config ... #{@gre}"
     print @apps[appName]["thin"]
-    print "\nAvailable ..... "
+    print "\n#{@ncl}Available ..... #{@gre}"
     print @apps[appName]["available"]
-    print "\nEnabled ....... "
+    print "\n#{@ncl}Enabled ....... #{@gre}"
     print @apps[appName]["enabled"]
-    print "\nDatabase ...... "
+    print "\n#{@ncl}Database ...... #{@gre}"
     print @apps[appName]["db"]
-    print "\nOnline ........ "
+    print "\n#{@ncl}Online ........ #{@gre}"
     print @apps[appName]["online"]
+    print "#{@ncl}\n\n"
 
-    print "\n"
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
