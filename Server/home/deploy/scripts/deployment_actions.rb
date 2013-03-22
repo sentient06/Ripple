@@ -593,7 +593,7 @@ class DeploymentActions
 
     print "\n#{@gre}#{appName.capitalize} application's details\n"
     print dashes[0, appName.length]
-    print "#{dashes}\n\n"
+    print "#{dashes}\n"
     print "\n#{@ncl}URL ........... #{@gre}"
     print @apps[appName]["url"]
     print "\n#{@ncl}Ports ......... #{@gre}"
