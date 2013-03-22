@@ -77,7 +77,8 @@ class DeploymentActions
     @nginxAvailableFolder = "/etc/nginx/sites-available/"
     @nginxEnabledFolder   = "/etc/nginx/sites-enabled/"
 
-    @stop = false
+    @dashes = '----------------------'
+    @stop   = false
 
     loadData
 
@@ -121,12 +122,14 @@ class DeploymentActions
   #-------------------------------------------------------------------------------
   # Print methods
 
-  def ptNormal(msg)
+  def ptStatic(msg)
+    puts "\n#{@cya}#{msg}#{@ncl}\n"
+  end
 
+  def ptNormal(msg)
     print "#{@yel} ->  #{msg}...#{@ncl}"
     print "\r"
     @lastMsg = msg
-
   end
 
   def ptConfirm
@@ -134,15 +137,11 @@ class DeploymentActions
   end
 
   def ptGreen(msg)
-
     puts "\n#{@gre}#{msg}#{@ncl}\n"
-
   end
 
   def ptError(msg)
-
     puts "\n#{@red}[Error] #{msg}!#{@ncl}\n"
-
   end
 
   #-------------------------------------------------------------------------------
@@ -606,7 +605,10 @@ class DeploymentActions
       return
     end
 
-    ptNormal "Creating #{appName}..."
+    print "\n"
+    ptStatic "Creating application '#{appName}'"
+    ptStatic "-----------------------"
+    ptStatic @dashes[0, appName.length]
 
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Create empty application:
@@ -646,6 +648,8 @@ class DeploymentActions
 
     availNginxConfigFile appName # available (should enable at deployment only)
     saveThinConfigFile appName   # thin
+
+    print "\n"
 
   end
 
