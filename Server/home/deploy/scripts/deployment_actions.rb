@@ -576,10 +576,11 @@ class DeploymentActions
     bigKey = @apps.keys.max { |a, b| a.length <=> b.length }
     len    = bigKey.length
 
+    puts 'List of applications'
+    puts '--------------------'
+
     @apps.each {|key, value|
-      # print @gre
       printf(" [#{@gre}%-#{len}s#{@ncl}] - #{@gre}%2d#{@ncl} ports starting on #{@gre}%4d#{@ncl}, url: #{@gre}%s#{@ncl}\n", key.to_s, value['ports'], value['first'], value['url'])
-      # print @ncl
     }
 
     print "\n"
