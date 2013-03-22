@@ -590,7 +590,7 @@ class DeploymentActions
   def appStatus(appName)
 
     print "\n#{@gre}#{appName.capitalize} application's details\n"
-    print appName.each_char { print "-" }
+    print appName.each_char do print "-" end
     print "----------------------\n\n"
     print "\n#{@ncl}URL ........... #{@gre}"
     print @apps[appName]["url"]
