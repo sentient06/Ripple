@@ -586,31 +586,32 @@ class DeploymentActions
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+  # Prints details about a given application.
   #
   def appStatus(appName)
 
-    dashes = '----------------------'
+    dashes = '-------------------------'
 
     print "\n#{@gre}#{appName.capitalize} application's details\n"
     print dashes[0, appName.length]
     print "#{dashes}\n"
-    print "\n#{@ncl}URL ........... #{@gre}"
+    print "\n#{@ncl}URL .............. #{@gre}"
     print @apps[appName]["url"]
-    print "\n#{@ncl}Ports ......... #{@gre}"
+    print "\n#{@ncl}Ports ............ #{@gre}"
     print @apps[appName]["ports"]
-    print "\n#{@ncl}First port .... #{@gre}"
+    print "\n#{@ncl}First port ....... #{@gre}"
     print @apps[appName]["first"]
-    print "\n#{@ncl}Repository .... #{@gre}"
+    print "\n#{@ncl}Repository ....... #{@gre}"
     print @apps[appName]["repository"]
-    print "\n#{@ncl}Thin config ... #{@gre}"
+    print "\n#{@ncl}Thin config ...... #{@gre}"
     print @apps[appName]["thin"]
-    print "\n#{@ncl}Available ..... #{@gre}"
+    print "\n#{@ncl}Nginx available .. #{@gre}"
     print @apps[appName]["available"]
-    print "\n#{@ncl}Enabled ....... #{@gre}"
+    print "\n#{@ncl}Nginx enabled .... #{@gre}"
     print @apps[appName]["enabled"]
-    print "\n#{@ncl}Database ...... #{@gre}"
+    print "\n#{@ncl}Database ......... #{@gre}"
     print @apps[appName]["db"]
-    print "\n#{@ncl}Online ........ #{@gre}"
+    print "\n#{@ncl}Online ........... #{@gre}"
     print @apps[appName]["online"]
     print "#{@ncl}\n\n"
 
