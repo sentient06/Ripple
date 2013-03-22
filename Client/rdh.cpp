@@ -155,6 +155,12 @@ int main (int argc, const char * argv[]) {
 
     snprintf(command, 512, "ssh %s@%s \"%s %s list\"", user, server, action, trigger);
 
+  } else if ( strcmp(argv[1], "status") == 0 ){
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // Status
+
+    snprintf(command, 512, "ssh %s@%s \"%s %s status %s\"", user, server, action, trigger, appName.c_str());
+
   } else if ( strcmp(argv[1], "create") == 0 ){
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // Create
