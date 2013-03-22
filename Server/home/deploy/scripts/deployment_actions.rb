@@ -124,7 +124,7 @@ class DeploymentActions
   def ptNormal(msg)
 
     print "#{@yel}#{msg}...#{@ncl}\n"
-    # print "\r"
+    print "\r"
     @lastMsg = msg
 
   end
@@ -153,7 +153,7 @@ class DeploymentActions
   # Returns a process object.
   def systemCmd(commandStr)
 
-    print "Executing '#{commandStr}'..."
+    # print "Executing '#{commandStr}'..."
     output = `#{commandStr} 2>&1`
     # $? -> process, i.e
     # #<Process::Status: pid 1612 exit 0>
@@ -196,15 +196,21 @@ class DeploymentActions
 
     # Iterates through all apps to store correct ports:
 
+    print "\n"
+
     @apps.each {|key, value|
       value["ports"].times do |i|
+        print "\r"
         if i == 0
           value["first"] = port
         end
-        puts "#{@gre} - Port #{port} - #{key}#{@ncl}"
+        # puts "#{@gre} - Port #{port} - #{key}#{@ncl}"
+        print "Setting port ##{port}"
         port += 1
       end
     }
+
+    print "\n"
 
     saveData
 
@@ -585,38 +591,6 @@ class DeploymentActions
     print "\n"
   end
 
-  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-  # Prints details about a given application.
-  #
-  def appStatus(appName)
-
-    dashes = '-------------------------'
-
-    print "\n#{@gre}#{appName.capitalize} application's details\n"
-    print dashes[0, appName.length]
-    print "#{dashes}\n"
-    print "\n#{@ncl}URL .............. #{@gre}"
-    print @apps[appName]["url"]
-    print "\n#{@ncl}Ports ............ #{@gre}"
-    print @apps[appName]["ports"]
-    print "\n#{@ncl}First port ....... #{@gre}"
-    print @apps[appName]["first"]
-    print "\n#{@ncl}Repository ....... #{@gre}"
-    print @apps[appName]["repository"]
-    print "\n#{@ncl}Thin config ...... #{@gre}"
-    print @apps[appName]["thin"]
-    print "\n#{@ncl}Nginx available .. #{@gre}"
-    print @apps[appName]["available"]
-    print "\n#{@ncl}Nginx enabled .... #{@gre}"
-    print @apps[appName]["enabled"]
-    print "\n#{@ncl}Database ......... #{@gre}"
-    print @apps[appName]["db"]
-    print "\n#{@ncl}Online ........... #{@gre}"
-    print @apps[appName]["online"]
-    print "#{@ncl}\n\n"
-
-  end
-
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Creates a new application
   #
@@ -643,6 +617,8 @@ class DeploymentActions
       ptError "There is already an app with this name"
       return
     end
+
+    ptNormal "Creating #{appName}..."
 
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Create empty application:
@@ -682,6 +658,38 @@ class DeploymentActions
 
     availNginxConfigFile appName # available (should enable at deployment only)
     saveThinConfigFile appName   # thin
+
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+  # Prints details about a given application.
+  #
+  def appStatus(appName)
+
+    dashes = '----------------------'
+
+    print "\n#{@gre}#{appName.capitalize} application's details\n"
+    print dashes[0, appName.length]
+    print "#{dashes}\n"
+    print "\n#{@ncl}URL .............. #{@gre}"
+    print @apps[appName]["url"]
+    print "\n#{@ncl}Ports ............ #{@gre}"
+    print @apps[appName]["ports"]
+    print "\n#{@ncl}First port ....... #{@gre}"
+    print @apps[appName]["first"]
+    print "\n#{@ncl}Repository ....... #{@gre}"
+    print @apps[appName]["repository"]
+    print "\n#{@ncl}Thin config ...... #{@gre}"
+    print @apps[appName]["thin"]
+    print "\n#{@ncl}Nginx available .. #{@gre}"
+    print @apps[appName]["available"]
+    print "\n#{@ncl}Nginx enabled .... #{@gre}"
+    print @apps[appName]["enabled"]
+    print "\n#{@ncl}Database ......... #{@gre}"
+    print @apps[appName]["db"]
+    print "\n#{@ncl}Online ........... #{@gre}"
+    print @apps[appName]["online"]
+    print "#{@ncl}\n\n"
 
   end
 

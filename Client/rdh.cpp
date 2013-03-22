@@ -38,23 +38,42 @@
 
 using namespace std;
 
+char red[16] = "\033[0;31m";
+char gre[16] = "\033[0;32m";
+char yel[16] = "\033[0;33m";
+char blu[16] = "\033[0;34m";
+char pur[16] = "\033[0;35m";
+char cya[16] = "\033[0;36m";
+char ncl[16] = "\033[0m"; //No colour
+
+void errorAppName(){
+  cout << red << "Please define a name for the application." << ncl << endl << endl;
+}
+
+void errorAppAddr(){
+  cout << red << "Please define the URL." << ncl << endl << endl;
+}
+
+void displayHelp(const char * argv[]){
+  cout << cya << endl;
+  printf("Usage: %s COMMAND [--app APP] [command-specific-options]\n\n", argv[0]);
+  printf("Primary help topics, type \"%s help TOPIC\" for more details:\n\n", argv[0]);
+  printf("  list      #  list installed applications\n");
+  printf("  status    #  display information about an application\n");
+  printf("  apps      #  manage apps (create, destroy)\n");
+  cout << ncl << endl;
+}
+
 int main (int argc, const char * argv[]) {
 
   // Basic stuff:
-
   char command[512];
+  char fullCmd[512];
+
   char user[16]    = "bot";
   char server[64]  = "ubuntu12";
   char action[32]  = "sh";
   char trigger[64] = "\\$HOME/trigger.sh"; 
-
-  char red[16] = "\033[0;31m";
-  char gre[16] = "\033[0;32m";
-  char yel[16] = "\033[0;33m";
-  char blu[16] = "\033[0;34m";
-  char pur[16] = "\033[0;35m";
-  char cya[16] = "\033[0;36m";
-  char ncl[16] = "\033[0m"; //No colour
 
   // Variables variables?
   string appName = "";
@@ -65,16 +84,9 @@ int main (int argc, const char * argv[]) {
   printf("Server: %s\n", server);
   cout << ncl;
 
-  // Check arguments
-
   // Check arguments number
   if ( argc == 1 ) {
-    cout << cya << endl;
-    printf("Usage: %s COMMAND [--app APP] [command-specific-options]\n\n", argv[0]);
-    printf("Primary help topics, type \"%s help TOPIC\" for more details:\n\n", argv[0]);
-    printf("  list      #  list installed applications\n");
-    printf("  apps      #  manage apps (create, destroy)\n");
-    cout << ncl << endl;
+    displayHelp(argv);
     return 1;
   }
 
@@ -83,14 +95,16 @@ int main (int argc, const char * argv[]) {
 
   for (int i = 1; i < argc; i++) {
 
-    // printf("%d: %s\n", i, argv[i]);
+    // cout << pur;
+    // printf("%d: %s", i, argv[i]);
+    // cout << ncl << endl;
     // printf("%d: %s\n", i+1, argv[i+1]);
 
     // if (i + 1 != argc) // Check that we haven't finished parsing already
       if (string(argv[i]) == "-a" || string(argv[i]) == "--app") {
 
         if (argv[i+1] == NULL || string(argv[i+1]).substr(0,1) == "-" ) { // || string(argv[i+1]).find("-") > 0) {
-          cout << red << "Please define a name for the application." << ncl << endl << endl;
+          errorAppName();
           return 1;
         }
         appName = argv[i + 1];
@@ -98,7 +112,7 @@ int main (int argc, const char * argv[]) {
       } else if (string(argv[i]) == "-u" || string(argv[i]) == "--url") {
 
         if (argv[i+1] == NULL || string(argv[i+1]).substr(0,1) == "-") {
-          cout << red << "Please define the URL." << ncl << endl << endl;
+          errorAppAddr();
           return 1;
         }
         appAddr = argv[i + 1];
@@ -120,12 +134,19 @@ int main (int argc, const char * argv[]) {
   //----------------------------------------------------------------------------
   // Second parsing
 
-  if ( appName.empty() )
+  // Must check the counting, or else the variables get messed up with different
+  // information.
+
+  if ( appName.empty() && argc > 1 )
     if ( argv[2] ) appName = argv[2];
-  if ( appAddr.empty() )
+  if ( appAddr.empty() && argc > 2 )
     if ( argv[3] ) appAddr = argv[3];
-  if ( servers.empty() )
+  if ( servers.empty() && argc > 3 )
     if ( argv[4] ) servers = argv[4];
+
+  // cout << endl << pur;
+  // printf("appName: [%s] appAddr: [%s] servers: [%s]", appName.c_str(), appAddr.c_str(), servers.c_str());
+  // cout << ncl << endl;
 
   //----------------------------------------------------------------------------
   // Assembling command
@@ -143,10 +164,10 @@ int main (int argc, const char * argv[]) {
  
     if (appName.empty()){
       cout << "Restarting all apps...\n" << endl;
-      snprintf(command, 512, "ssh %s@%s \"%s %s restart\"", user, server, action, trigger);
+      snprintf(command, 512, "restart");
     } else {
-      printf("Restarting %s...\n", appName.c_str());
-      snprintf(command, 512, "ssh %s@%s \"%s %s restart %s\"", user, server, action, trigger, appName.c_str() );
+      printf("Restarting %s...\n", appName.c_str() );
+      snprintf(command, 512, "restart %s", appName.c_str() );
     }
 
   } else if ( strcmp(argv[1], "list") == 0 ){
@@ -159,32 +180,43 @@ int main (int argc, const char * argv[]) {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // Status
 
-    snprintf(command, 512, "ssh %s@%s \"%s %s status %s\"", user, server, action, trigger, appName.c_str());
+    if ( appName.empty() ) {
+      errorAppName();
+      return 1;
+    }
+
+    snprintf(command, 512, "status %s\"", appName.c_str());
 
   } else if ( strcmp(argv[1], "create") == 0 ){
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // Create
 
+    if ( appName.empty() ) {
+      errorAppName();
+      return 1;
+    }
+
+    if ( appAddr.empty() ) {
+      errorAppAddr();
+      return 1;
+    }
+
     if ( servers.empty() )
-      snprintf(command, 512, "ssh %s@%s \"%s %s create %s %s\"", user, server, action, trigger, appName.c_str(), appAddr.c_str());
+      snprintf(command, 512, "create %s %s", appName.c_str(), appAddr.c_str());
     else
-      snprintf(command, 512, "ssh %s@%s \"%s %s create %s %s %s\"", user, server, action, trigger, appName.c_str(), appAddr.c_str(), servers.c_str());
+      snprintf(command, 512, "create %s %s %s", appName.c_str(), appAddr.c_str(), servers.c_str());
 
-  } else if ( strcmp(argv[1], "check") == 0 ){
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    // Check
-
-    snprintf(command, 512, "ssh %s@%s \"%s %s check %s\"", user, server, action, trigger, appName.c_str());
-  
   }
+
+  snprintf(fullCmd, 512, "ssh %s@%s \"%s %s %s\"", user, server, action, trigger, command);
 
   //----------------------------------------------------------------------------
   // Executing
   cout << endl << pur;
-  printf("%s", command);
+  printf("cmd: [%s]", fullCmd);
   cout << ncl << endl;
 
-  system((char *)command);
+  system((char *)fullCmd);
 
   return 0;
 }

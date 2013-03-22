@@ -26,3 +26,7 @@ end
 if ARGV[0] == 'resethard'
     deployer.resethard
 end
+
+if ARGV[0] == 'restart'
+    deployer.restart ARGV[1]
+end
