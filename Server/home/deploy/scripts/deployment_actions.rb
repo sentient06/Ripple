@@ -123,14 +123,14 @@ class DeploymentActions
 
   def ptNormal(msg)
 
-    print "#{@yel} -> #{msg}...#{@ncl}"
+    print "#{@yel} ->  #{msg}...#{@ncl}"
     print "\r"
     @lastMsg = msg
 
   end
 
   def ptConfirm
-    puts "#{@gre}[ok] #{@lastMsg}.#{@ncl}"
+    puts "#{@gre}[ok] #{@lastMsg}.  #{@ncl}"
   end
 
   def ptGreen(msg)
@@ -192,10 +192,9 @@ class DeploymentActions
 
     port = 3000
 
-    # Iterates through all apps to store correct ports:
-
     print "\n"
 
+    # Iterates through all apps to store correct ports:
     @apps.each {|key, value|
       value["ports"].times do |i|
         print "\r"
@@ -203,7 +202,7 @@ class DeploymentActions
           value["first"] = port
         end
         # puts "#{@gre} - Port #{port} - #{key}#{@ncl}"
-        print "Setting port ##{port}"
+        print "Setting ports"
         port += 1
       end
     }
