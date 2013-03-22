@@ -167,7 +167,7 @@ class DeploymentActions
     unless File.exists?(@dataFile)
       @apps = Hash.new
       print "\r"
-      ptNormal("List of apps unavailable")
+      ptGreen "List of apps unavailable."
     else
       @apps = Marshal.load File.read(@dataFile)
     end
