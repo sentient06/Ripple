@@ -67,7 +67,7 @@ void displayHelp(const char * argv[]){
 int main (int argc, const char * argv[]) {
 
   // Basic stuff:
-  char command[512];
+  char shellCmd[512];
   char fullCmd[512];
 
   char user[16]    = "bot";
@@ -76,6 +76,7 @@ int main (int argc, const char * argv[]) {
   char trigger[64] = "\\$HOME/trigger.sh"; 
 
   // Variables variables?
+  string command = argv[1]; //.c_str();
   string appName = "";
   string appAddr = "";
   string servers = "";
@@ -95,9 +96,9 @@ int main (int argc, const char * argv[]) {
 
   for (int i = 1; i < argc; i++) {
 
-    // cout << pur;
-    // printf("%d: %s", i, argv[i]);
-    // cout << ncl << endl;
+    cout << pur;
+    printf("%d: %s", i, argv[i]);
+    cout << ncl << endl;
     // printf("%d: %s\n", i+1, argv[i+1]);
 
     // if (i + 1 != argc) // Check that we haven't finished parsing already
@@ -109,7 +110,11 @@ int main (int argc, const char * argv[]) {
         }
         appName = argv[i + 1];
 
-      } else if (string(argv[i]) == "-u" || string(argv[i]) == "--url") {
+      } else if (
+           string(argv[i]) == "-u"
+        || string(argv[i]) == "--url"
+        || string(argv[i]) == "--addr"
+      ) {
 
         if (argv[i+1] == NULL || string(argv[i+1]).substr(0,1) == "-") {
           errorAppAddr();
@@ -117,7 +122,12 @@ int main (int argc, const char * argv[]) {
         }
         appAddr = argv[i + 1];
 
-      } else if (string(argv[i]) == "-s" || string(argv[i]) == "--servers") {
+      } else if (
+           string(argv[i]) == "-s"
+        || string(argv[i]) == "--servers"
+        || string(argv[i]) == "-p"
+        || string(argv[i]) == "--ports"
+      ) {
 
         if (argv[i+1] == NULL || string(argv[i+1]).substr(0,1) == "-") {
           cout << yel << "No number of servers, assuming 1." << ncl << endl << endl;
@@ -125,7 +135,6 @@ int main (int argc, const char * argv[]) {
         } else {
           servers = argv[i + 1];
         }
-        
 
       }
       
@@ -139,10 +148,10 @@ int main (int argc, const char * argv[]) {
 
   if ( appName.empty() && argc > 1 )
     if ( argv[2] ) appName = argv[2];
-  if ( appAddr.empty() && argc > 2 )
-    if ( argv[3] ) appAddr = argv[3];
-  if ( servers.empty() && argc > 3 )
-    if ( argv[4] ) servers = argv[4];
+  // if ( appAddr.empty() && argc > 2 )
+  //   if ( argv[3] ) appAddr = argv[3];
+  // if ( servers.empty() && argc > 3 )
+  //   if ( argv[4] ) servers = argv[4];
 
   // cout << endl << pur;
   // printf("appName: [%s] appAddr: [%s] servers: [%s]", appName.c_str(), appAddr.c_str(), servers.c_str());
@@ -151,45 +160,50 @@ int main (int argc, const char * argv[]) {
   //----------------------------------------------------------------------------
   // Assembling command
 
-  if ( strcmp(argv[1], "help") == 0 ){
+  if ( command == "help" ){
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // Help
+    // this help
  
       cout << "Help unfinished" << endl;
 
 
-  } else if ( strcmp(argv[1], "restart") == 0 ){
+  } else if ( command == "restart" ){
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // Restart thin / nginx
+    // this restart app
  
     if (appName.empty()){
       cout << "Restarting all apps...\n" << endl;
-      snprintf(command, 512, "restart");
+      snprintf(shellCmd, 512, "restart");
     } else {
       printf("Restarting %s...\n", appName.c_str() );
-      snprintf(command, 512, "restart %s", appName.c_str() );
+      snprintf(shellCmd, 512, "restart %s", appName.c_str() );
     }
 
-  } else if ( strcmp(argv[1], "list") == 0 ){
+  } else if ( command == "list" ){
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // List
+    // this list
 
-    snprintf(command, 512, "list", user, server, action, trigger);
+    snprintf(shellCmd, 512, "list", user, server, action, trigger);
 
-  } else if ( strcmp(argv[1], "status") == 0 ){
+  } else if ( command == "status" ){
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // Status
+    // this status app
 
     if ( appName.empty() ) {
       errorAppName();
       return 1;
     }
 
-    snprintf(command, 512, "status %s", appName.c_str());
+    snprintf(shellCmd, 512, "status %s", appName.c_str());
 
-  } else if ( strcmp(argv[1], "create") == 0 ){
+  } else if ( command == "create" ){
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // Create
+    // this create app app.com [2]
 
     if ( appName.empty() ) {
       errorAppName();
@@ -201,14 +215,41 @@ int main (int argc, const char * argv[]) {
       return 1;
     }
 
+    // if ( servers.empty() )
+    //   snprintf(shellCmd, 512, "create %s %s", appName.c_str(), appAddr.c_str());
+    // else
+    //   snprintf(shellCmd, 512, "create %s %s %s", appName.c_str(), appAddr.c_str(), servers.c_str());
+
+  } else if ( command == "set" ){
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // Set [ url | ports ]
+    // this set app url app.com
+    // this set app -u app.com
+    // this set app ports 3
+    // this set app -p 3
+    // this set app -u app.com -p 3
+
+    if ( appName.empty() ) {
+      errorAppName();
+      return 1;
+    }
+
+    if ( !appAddr.empty() ) {
+      cout << "url = " << appAddr.c_str() << endl;
+    }
+
+    if ( !servers.empty() ) {
+      cout << "pts = " << servers.c_str() << endl;
+    }
+
     if ( servers.empty() )
-      snprintf(command, 512, "create %s %s", appName.c_str(), appAddr.c_str());
+      snprintf(shellCmd, 512, "create %s %s", appName.c_str(), appAddr.c_str());
     else
-      snprintf(command, 512, "create %s %s %s", appName.c_str(), appAddr.c_str(), servers.c_str());
+      snprintf(shellCmd, 512, "create %s %s %s", appName.c_str(), appAddr.c_str(), servers.c_str());
 
   }
 
-  snprintf(fullCmd, 512, "ssh %s@%s \"%s %s %s\"", user, server, action, trigger, command);
+  snprintf(fullCmd, 512, "ssh %s@%s \"%s %s %s\"", user, server, action, trigger, shellCmd);
 
   //----------------------------------------------------------------------------
   // Executing
@@ -216,7 +257,7 @@ int main (int argc, const char * argv[]) {
   printf("cmd: [%s]", fullCmd);
   cout << ncl << endl;
 
-  system((char *)fullCmd);
+  // system((char *)fullCmd);
 
   return 0;
 }

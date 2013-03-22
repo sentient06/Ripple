@@ -684,6 +684,12 @@ class DeploymentActions
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Changes application's parameters
+  #
+  def setParameters(appName, parameters, values)
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Check database information and create it if needed
   #
   def deployDatabase(appName)
@@ -957,11 +963,22 @@ class DeploymentActions
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Sets new value in the apps hash
   #
-  def set(appName, key, value)
+  def set(appName, newValues)
 
-    @apps[appName][key] = value
-    saveData
-    resetAll
+    # newValues = "url:www.me.com,pts:3"
+    # newHash = newValues.split(',').inject(Hash.new{|h,k|h[k]=[]}) do |h, s|
+    #   k,v = s.split(':')
+    #   h[k] = v.to_i == 0 ? v : v.to_i
+    #   h
+    # end
+
+    # newHash.each {|key, value|
+
+    # }
+
+    # @apps[appName][key] = value
+    # saveData
+    # resetAll
 
   end
 
