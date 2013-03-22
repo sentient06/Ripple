@@ -191,7 +191,7 @@ class DeploymentActions
 
     port = 3000
 
-    print "\n"
+    ptNormal "Setting ports"
 
     # Iterates through all apps to store correct ports:
     @apps.each {|key, value|
@@ -201,13 +201,11 @@ class DeploymentActions
           value["first"] = port
         end
         # puts "#{@gre} - Port #{port} - #{key}#{@ncl}"
-        print "Setting ports"
         port += 1
       end
     }
 
-    print "\n"
-
+    ptConfirm
     saveData
 
   end
