@@ -174,7 +174,7 @@ int main (int argc, const char * argv[]) {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // List
 
-    snprintf(command, 512, "ssh %s@%s \"%s %s list\"", user, server, action, trigger);
+    snprintf(command, 512, "list", user, server, action, trigger);
 
   } else if ( strcmp(argv[1], "status") == 0 ){
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -185,7 +185,7 @@ int main (int argc, const char * argv[]) {
       return 1;
     }
 
-    snprintf(command, 512, "status %s\"", appName.c_str());
+    snprintf(command, 512, "status %s", appName.c_str());
 
   } else if ( strcmp(argv[1], "create") == 0 ){
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

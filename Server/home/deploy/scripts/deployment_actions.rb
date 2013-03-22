@@ -123,14 +123,14 @@ class DeploymentActions
 
   def ptNormal(msg)
 
-    print "#{@yel}#{msg}...#{@ncl}"
+    print "#{@yel} -> #{msg}...#{@ncl}"
     print "\r"
     @lastMsg = msg
 
   end
 
   def ptConfirm
-    puts "#{@gre}#{@lastMsg}. [ok]#{@ncl}"
+    puts "#{@gre}[ok] #{@lastMsg}.#{@ncl}"
   end
 
   def ptGreen(msg)
@@ -283,16 +283,7 @@ class DeploymentActions
     ptNormal "Cloning repository for #{appName}"
 
     # Cloning:
-
-    # require 'open3'
     cloneGit = systemCmd( "git clone #{@repositoriesFolder}#{appName}.git #{@productionFolder}#{appName}" )
-    # @stdin, @stdout, @stderr = Open3.popen3('git clone', "#{@repositoriesFolder}#{appName}.git", "#{@productionFolder}#{appName}")
-    # @stdout.gets(nil)
-    # @stderr.gets(nil)
-
-    # @stdin.close
-    # @stdout.close
-    # @stderr.close
 
     if cloneGit.success?
       ptConfirm
@@ -335,7 +326,7 @@ class DeploymentActions
 
     # Saving file:
 
-    ptNormal "Saving Nginx configuration"
+    ptNormal "Saving Nginx configuration file"
 
     file = "#{@templatesFolder}nginx.erb"
     nginxTemplate = ERB.new(File.read(file))
