@@ -589,7 +589,12 @@ class DeploymentActions
   #
   def appStatus(appName)
 
-    print "\n#{@gre}#{appName}"
+Application test details
+------------------------
+
+    print "\n#{@gre}#{appName.capitalize} application's details\n"
+    print appName.length.each { print "-" }
+    print "----------------------\n\n"
     print "\n#{@ncl}URL ........... #{@gre}"
     print @apps[appName]["url"]
     print "\n#{@ncl}Ports ......... #{@gre}"
