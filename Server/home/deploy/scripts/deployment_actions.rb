@@ -686,8 +686,8 @@ class DeploymentActions
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Changes application's parameters
   #
-  def setParameters(appName, parameters, values)
-  end
+  # def setParameters(appName, parameters, values)
+  # end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Check database information and create it if needed
@@ -963,7 +963,10 @@ class DeploymentActions
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Sets new value in the apps hash
   #
-  def set(appName, newValues)
+  def setParameters(appName, newValues)
+
+    puts "appname = #{appName}"
+    puts "newValues = #{newValues}"
 
     # newValues = "url:www.me.com,pts:3"
     # newHash = newValues.split(',').inject(Hash.new{|h,k|h[k]=[]}) do |h, s|

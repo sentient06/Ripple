@@ -77,6 +77,7 @@ int main (int argc, const char * argv[]) {
 
   // Variables variables?
   string command = argv[1]; //.c_str();
+  string shellCmd2 = "";
   string appName = "";
   string appAddr = "";
   string servers = "";
@@ -234,22 +235,30 @@ int main (int argc, const char * argv[]) {
       return 1;
     }
 
+    shellCmd2 += "set " + appName + " ";
+
     if ( !appAddr.empty() ) {
       cout << "url = " << appAddr.c_str() << endl;
+      shellCmd2 += "url:" + appAddr;
+    }
+
+    if ( !appAddr.empty() && !servers.empty() ) {
+      shellCmd2 += ",";
     }
 
     if ( !servers.empty() ) {
       cout << "pts = " << servers.c_str() << endl;
+      shellCmd2 += "ports:" + servers;
     }
 
-    if ( servers.empty() )
-      snprintf(shellCmd, 512, "create %s %s", appName.c_str(), appAddr.c_str());
-    else
-      snprintf(shellCmd, 512, "create %s %s %s", appName.c_str(), appAddr.c_str(), servers.c_str());
+    // if ( servers.empty() )
+    //   snprintf(shellCmd, 512, "create %s %s", appName.c_str(), appAddr.c_str());
+    // else
+    //   snprintf(shellCmd, 512, "create %s %s %s", appName.c_str(), appAddr.c_str(), servers.c_str());
 
   }
 
-  snprintf(fullCmd, 512, "ssh %s@%s \"%s %s %s\"", user, server, action, trigger, shellCmd);
+  snprintf(fullCmd, 512, "ssh %s@%s \"%s %s %s\"", user, server, action, trigger, shellCmd2.c_str());
 
   //----------------------------------------------------------------------------
   // Executing

@@ -15,6 +15,10 @@ if ARGV[0] == 'create'
     deployer.create ARGV[1], ARGV[2], ARGV[3]
 end
 
+if ARGV[0] == 'set'
+    deployer.setParameters ARGV[1], ARGV[2]
+end
+
 if ARGV[0] == 'destroy'
     deployer.destroy ARGV[1]
 end
