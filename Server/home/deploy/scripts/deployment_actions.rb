@@ -572,8 +572,9 @@ class DeploymentActions
   def list
     # Iterate through all apps and print
 
-    len = 15
-    len = @apps.keys.max { |a, b| a.length <=> b.length }
+    len    = 15
+    bigKey = @apps.keys.max { |a, b| a.length <=> b.length }
+    len    = bigKey.length
 
     @apps.each {|key, value|
       # print @gre
