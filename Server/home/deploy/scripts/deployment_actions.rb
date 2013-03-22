@@ -589,9 +589,11 @@ class DeploymentActions
   #
   def appStatus(appName)
 
+    dashes = '----------------------'
+
     print "\n#{@gre}#{appName.capitalize} application's details\n"
-    print appName.each_char do print "-" end
-    print "----------------------\n\n"
+    print dashes[0, appName.length]
+    print "#{dashes}\n\n"
     print "\n#{@ncl}URL ........... #{@gre}"
     print @apps[appName]["url"]
     print "\n#{@ncl}Ports ......... #{@gre}"
