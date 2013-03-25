@@ -166,7 +166,7 @@ class DeploymentActions
 
     unless File.exists?(@dataFile)
       @apps = Hash.new
-      print "\r"
+      # print "\r"
       ptGreen "List of apps unavailable."
     else
       @apps = Marshal.load File.read(@dataFile)
@@ -973,7 +973,12 @@ class DeploymentActions
     puts "appname = #{appName}"
     puts "newValues = #{newValues}"
 
-    # newValues = "url:www.me.com,pts:3"
+    unless @apps.has_key?(appName)
+      ptError "There is no application with the name '#{appName}'"
+      exit
+    end
+
+    # newValues = "url:www.me.com,ports:3"
     newHash = newValues.split(',').inject(Hash.new{|h,k|h[k]=[]}) do |h, s|
       k,v = s.split(':')
       h[k] = v.to_i == 0 ? v : v.to_i
@@ -982,9 +987,9 @@ class DeploymentActions
 
     puts newHash
 
-    # newHash.each {|key, value|
-
-    # }
+    newHash.each {|key, value|
+      @apps[appName][key] = value
+    }
 
     # @apps[appName][key] = value
     # saveData

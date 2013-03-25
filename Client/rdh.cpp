@@ -222,10 +222,10 @@ int main (int argc, const char * argv[]) {
       return 1;
     }
 
-    // if ( servers.empty() )
-    //   snprintf(shellCmd, 512, "create %s %s", appName.c_str(), appAddr.c_str());
-    // else
-    //   snprintf(shellCmd, 512, "create %s %s %s", appName.c_str(), appAddr.c_str(), servers.c_str());
+    if ( servers.empty() )
+      snprintf(shellCmd, 512, "create %s %s", appName.c_str(), appAddr.c_str());
+    else
+      snprintf(shellCmd, 512, "create %s %s %s", appName.c_str(), appAddr.c_str(), servers.c_str());
 
   } else if ( command == "set" ){
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
