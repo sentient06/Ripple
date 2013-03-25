@@ -38,13 +38,13 @@
 
 using namespace std;
 
-char red[16] = "\033[0;31m";
-char gre[16] = "\033[0;32m";
-char yel[16] = "\033[0;33m";
-char blu[16] = "\033[0;34m";
-char pur[16] = "\033[0;35m";
-char cya[16] = "\033[0;36m";
-char ncl[16] = "\033[0m"; //No colour
+char red[11] = "\033[0;31m";
+char gre[11] = "\033[0;32m";
+char yel[11] = "\033[0;33m";
+char blu[11] = "\033[0;34m";
+char pur[11] = "\033[0;35m";
+char cya[11] = "\033[0;36m";
+char ncl[11] = "\033[0m"; //No colour
 
 void errorAppName(){
   cout << red << "Please define a name for the application." << ncl << endl << endl;
@@ -58,17 +58,96 @@ void errorAppAddrAndServer(){
   cout << red << "Please define the URL and/or the number of ports." << ncl << endl << endl;
 }
 
-void displayHelp(const char * argv[]){
+int displayHelp(int argc, const char * argv[]){
+
+  if (argc > 1 && argv[2] != NULL){
+
+    if (string(argv[2]) == "list") {
+      cout << cya << endl;
+      printf("Usage: %s list\n\n", argv[0]);
+      printf("Lists the applications installed, their first Thin port number, number of servers used and URL.\n");
+      cout << ncl << endl;
+      return 0;
+    } else
+    
+    if (string(argv[2]) == "status") {
+      cout << cya << endl;
+      printf("Usage: %s status [application name | [-a|--app] application name]\n\n", argv[0]);
+      printf("Lists the details of the given application, namely:\n");
+      printf("  - URL\n");
+      printf("  - Ports\n");
+      printf("  - First port\n");
+      printf("  - Repository\n");
+      printf("  - Thin config\n");
+      printf("  - Nginx available\n");
+      printf("  - Nginx enabled\n");
+      printf("  - Database\n");
+      printf("  - Online\n\n");
+      printf("Example: %s status [appname]\n", argv[0]);
+      printf("         %s status -a [appname]\n", argv[0]);
+      cout << ncl << endl;
+      return 0;
+    } else
+
+    if (string(argv[2]) == "create") {
+      cout << cya << endl;
+      printf("Usage: %s create [ name url servers | <parameters> ]\n\n", argv[0]);
+      printf("Creates an application in the server.\n");
+      printf("The parameters are:\n\n");
+      printf("  -a --app     #  compulsory: application's name.\n");
+      printf("  -u --url     #  compulsory: application's url address.\n");
+      printf("  -s --servers #  optional: number of thin server's instances to be used.\n");
+      printf("                  If no number of servers is specified, it is assumed to be 1.\n\n");
+      printf("Parameters can be used in a different order.\n");
+      printf("Examples: %s create myapp myapp.co.uk 3\n", argv[0]);
+      printf("          %s create -a myapp -u myapp.co.uk -s 3\n", argv[0]);
+      cout << ncl << endl;
+      return 0;
+    } else
+
+    if (string(argv[2]) == "set") {
+      cout << cya << endl;
+      printf("Usage: %s set [ name detail value | <parameters> ]\n\n", argv[0]);
+      printf("Changes a given detail of a given application.\n");
+      printf("The parameters are:\n\n");
+      printf("  -a --app     #  compulsory: application's name.\n");
+      printf("  -u --url     #  application's url address.\n");
+      printf("  -s --servers #  number of thin server's instances to be used.\n\n");
+      printf("Several details can be changed at the same time. At least one must be specified.\n");
+      printf("Examples: %s set myapp -s 3\n", argv[0]);
+      printf("          %s set -a myapp -u myapp.co.uk -s 3\n", argv[0]);
+      cout << ncl << endl;
+      return 0;
+    } else
+
+    if (string(argv[2]) == "apps") {
+      cout << cya << endl;
+      printf("Application actions:\n\n", argv[0]);
+      printf("  - status\n");
+      printf("  - create\n");
+      printf("  - set [ url / servers ]\n");
+
+
+      // printf("Lists the applications installed, their first Thin port number, number of servers used and URL.\n");
+      cout << ncl << endl;
+      return 0;
+    }
+
+  }
+
   cout << cya << endl;
   printf("Usage: %s COMMAND [--app APP] [command-specific-options]\n\n", argv[0]);
   printf("Primary help topics, type \"%s help TOPIC\" for more details:\n\n", argv[0]);
   printf("  list      #  list installed applications\n");
   printf("  status    #  display information about an application\n");
-  printf("  apps      #  manage apps (create, destroy)\n");
+  printf("  create    #  creates a new application's repository and config files\n");
+  printf("  set       #  changes an application's data\n");
+
+  // printf("  apps      #  manage apps (create, destroy)\n");
   cout << ncl << endl;
+  return 0;
+
 }
-
-
 
 int main (int argc, const char * argv[]) {
 
@@ -79,23 +158,28 @@ int main (int argc, const char * argv[]) {
   char user[16]    = "bot";
   char server[64]  = "ubuntu12";
   char action[32]  = "sh";
-  char trigger[64] = "\\$HOME/trigger.sh"; 
+  char trigger[64] = "\\$HOME/trigger.sh";
+
+  int debugging = 0;
 
   // Variables variables?
-  string command = argv[1]; //.c_str();
+  string command   = "";
   string shellCmd2 = "";
-  string appName = "";
-  string appAddr = "";
-  string servers = "";
+  string appName   = "";
+  string appAddr   = "";
+  string servers   = "";
 
-  cout << endl << cya;
-  printf("Server: %s\n", server);
-  cout << ncl;
-
-  // Check arguments number
-  if ( argc == 1 ) {
-    displayHelp(argv);
-    return 1;
+  // Check arguments number and display help if necessary
+  if ( argc > 1 ) {
+    if(string(argv[1]) == "help" ) {
+      displayHelp(argc, argv);
+      return 0;
+    } else {
+      command = argv[1];
+    }
+  } else {
+    displayHelp(argc, argv);
+    return 0;
   }
 
   //----------------------------------------------------------------------------
@@ -103,13 +187,16 @@ int main (int argc, const char * argv[]) {
 
   for (int i = 1; i < argc; i++) {
 
-    cout << pur;
-    printf("%d: %s", i, argv[i]);
-    cout << ncl << endl;
     // printf("%d: %s\n", i+1, argv[i+1]);
 
     // if (i + 1 != argc) // Check that we haven't finished parsing already
-      if (string(argv[i]) == "-a" || string(argv[i]) == "--app") {
+      if (
+           string(argv[i]) == "-a"
+        || string(argv[i]) == "--app"
+        || string(argv[i]) == "--application"
+        || string(argv[i]) == "--name"
+
+      ) {
 
         if (argv[i+1] == NULL || string(argv[i+1]).substr(0,1) == "-" ) { // || string(argv[i+1]).find("-") > 0) {
           errorAppName();
@@ -121,6 +208,7 @@ int main (int argc, const char * argv[]) {
            string(argv[i]) == "-u"
         || string(argv[i]) == "--url"
         || string(argv[i]) == "--addr"
+        || string(argv[i]) == "--address"
       ) {
 
         if (argv[i+1] == NULL || string(argv[i+1]).substr(0,1) == "-") {
@@ -132,8 +220,10 @@ int main (int argc, const char * argv[]) {
       } else if (
            string(argv[i]) == "-s"
         || string(argv[i]) == "--servers"
+        || string(argv[i]) == "--server"
         || string(argv[i]) == "-p"
         || string(argv[i]) == "--ports"
+        || string(argv[i]) == "--port"
       ) {
 
         if (argv[i+1] == NULL || string(argv[i+1]).substr(0,1) == "-") {
@@ -143,6 +233,17 @@ int main (int argc, const char * argv[]) {
           servers = argv[i + 1];
         }
 
+      } else if (
+           string(argv[i]) == "-db"
+        || string(argv[i]) == "--debug"
+      ) {
+        debugging = 1;
+        cout << red << "Debugging..." << ncl << endl << endl;
+        for (int u = 1; u < argc; u++) {
+          cout << pur;
+          printf("%d: %s", u, argv[u]);
+          cout << ncl << endl;
+        }
       }
       
   }
@@ -164,18 +265,34 @@ int main (int argc, const char * argv[]) {
   // printf("appName: [%s] appAddr: [%s] servers: [%s]", appName.c_str(), appAddr.c_str(), servers.c_str());
   // cout << ncl << endl;
 
+  if (debugging == 1){
+    cout << endl << cya;
+    printf("Server: %s\nArgc: %d\n", server, argc);
+    cout << ncl;
+  }
+
   //----------------------------------------------------------------------------
   // Assembling command
 
   if ( command == "help" ){
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // Help
-    // this help
+    // this help [topic]
  
-      cout << "Help unfinished" << endl;
+      // cout << "Help unfinished" << endl;
 
+      displayHelp(argc, argv);
 
-  } else if ( command == "restart" ){
+      // if ( argv[2] ) displayHelp(argv);
+      // else cout << "Please define a topic of help." << endl;
+      return 0;
+
+  } else {
+      if ( appName.empty() && argc > 1 )
+        if ( argv[2] ) appName = argv[2];
+  }
+
+  if ( command == "restart" ){
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // Restart thin / nginx
     // this restart app
@@ -241,6 +358,7 @@ int main (int argc, const char * argv[]) {
 
     if ( appAddr.empty() && servers.empty() ){
       errorAppAddrAndServer();
+      return 1;
     }
 
     if ( !appAddr.empty() ) {
@@ -270,11 +388,13 @@ int main (int argc, const char * argv[]) {
 
   //----------------------------------------------------------------------------
   // Executing
-  cout << endl << pur;
-  printf("cmd: [%s]", fullCmd);
-  cout << ncl << endl;
-
-  system((char *)fullCmd);
+  if (debugging == 1){
+    cout << endl << pur;
+    printf("cmd: [%s]", fullCmd);
+    cout << ncl << endl;
+  } else {
+    system((char *)fullCmd);
+  }
 
   return 0;
 }
