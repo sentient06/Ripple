@@ -555,6 +555,26 @@ class DeploymentActions
   # Action methods
 
   def test
+
+    ptStatic "Printing global variables"
+    ptStatic "-------------------------"
+    print "#{cya}DeployerUser         = #{gre}#{@deployerUser}#{ncl}\n"
+    print "#{cya}GitUser              = #{gre}#{@gitUser}#{ncl}\n"
+    print "#{cya}DataFile             = #{gre}#{@dataFile}#{ncl}\n"
+    print "#{cya}RepositoriesFolder   = #{gre}#{@repositoriesFolder}#{ncl}\n"
+    print "#{cya}TemplatesFolder      = #{gre}#{@templatesFolder}#{ncl}\n"
+    print "#{cya}ProductionFolder     = #{gre}#{@productionFolder}#{ncl}\n"
+    print "#{cya}DatabaseYml          = #{gre}#{@databaseYml}#{ncl}\n"
+    print "#{cya}NginxAvailableFolder = #{gre}#{@nginxAvailableFolder}#{ncl}\n"
+    print "#{cya}NginxEnabledFolder   = #{gre}#{@nginxEnabledFolder}#{ncl}\n"
+    print "\n"
+    ptStatic "Executing system commands"
+    ptStatic "-------------------------"
+    print "whoami: "
+    system("whoami")
+    print "sudo -u git whoami"
+    system("sudo -u git whoami")
+
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 

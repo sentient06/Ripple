@@ -31,6 +31,7 @@
 
 // g++ rdh.cpp
 // ./a.out list
+// ln -s /Users/<path>/RDH/Client/a.out /usr/local/bin/rdh
 // http://www.cplusplus.com/forum/articles/13355/
 
 #include <iostream>
@@ -67,6 +68,9 @@ string exec(char* cmd) {
     return result;
 }
 
+/**
+ * Reads configuration file.
+ */
 string readConfig(char* file) {
     string line = "";
     ifstream myfile(file);
@@ -80,6 +84,9 @@ string readConfig(char* file) {
     return line;
 }
 
+/**
+ * Saves the configuration file.
+ */
 int saveConfig(const char* dir, const char* server) {
     string file = string(dir) + "config";
     // cout << "Dir:    " << dir << endl;
@@ -113,6 +120,9 @@ int checkOnlineServer(string serverAddr){
     return pclose(output);
 }
 
+/**
+ * Display error message for missing application's name.
+ */
 void errorAppName(){
     cout << red << "Please define a name for the application." << ncl << endl << endl;
 }
