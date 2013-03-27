@@ -556,6 +556,7 @@ class DeploymentActions
 
   def test
 
+    print "\n"
     print "#{@cya}Printing global variables#{@ncl}\n"
     print "#{@cya}-------------------------#{@ncl}\n"
     print "#{@cya}DeployerUser         = #{@gre}#{@deployerUser}#{@ncl}\n"
@@ -574,6 +575,7 @@ class DeploymentActions
     system("whoami")
     print "sudo -u git whoami ... "
     system("sudo -u git whoami")
+    print "\n"
 
   end
 
