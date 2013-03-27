@@ -35,6 +35,9 @@
 
 #include <iostream>
 #include <string>
+#include <fstream>
+// #include <CoreServices/CoreServices.h>
+#include <sys/stat.h>
 
 using namespace std;
 
@@ -45,6 +48,70 @@ char blu[11] = "\033[0;34m";
 char pur[11] = "\033[0;35m";
 char cya[11] = "\033[0;36m";
 char ncl[11] = "\033[0m"; //No colour
+
+/**
+ * Executes Unix command.
+ * @see http://stackoverflow.com/questions/478898/how-to-execute-a-command-and-get-output-of-command-within-c
+ * @see http://stackoverflow.com/questions/7468286/warning-deprecated-conversion-from-string-constant-to-char
+ */
+string exec(char* cmd) {
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return "ERROR";
+    char buffer[128];
+    std::string result = "";
+    while(!feof(pipe)) {
+        if(fgets(buffer, 128, pipe) != NULL)
+            result += buffer;
+    }
+    pclose(pipe);
+    return result;
+}
+
+string readConfig(char* file) {
+    string line = "";
+    ifstream myfile(file);
+    if (myfile.is_open()){
+        while ( myfile.good() ){
+          getline (myfile,line);
+          // cout << line << endl;
+        }
+        myfile.close();
+    }
+    return line;
+}
+
+int saveConfig(const char* dir, const char* server) {
+    string file = string(dir) + "config";
+    // cout << "Dir:    " << dir << endl;
+    // cout << "File:   " << file.c_str() << endl;
+    cout << cya << "Server: " << server << ncl << endl << endl;
+
+    mkdir(dir, 0755); // 755 = (d) rwx r-x r-x
+
+    ofstream myfile;
+    myfile.open(file.c_str());
+    myfile << server;
+    myfile.close();
+    return 0; 
+}
+
+// int checkOnlineServer(string serverAddr){
+//     string pingCommand = "ping -c 1 " + serverAddr; // + " > nul";
+//     // system(pingCommand.c_str());
+//     FILE *output = popen(pingCommand.c_str(), "r");
+
+// }
+int checkOnlineServer(string serverAddr){
+    string pingCommand = "ping -c 1 -W 1000 " + serverAddr;
+    FILE *output;
+    // cout << "Running " << pingCommand.c_str() << " -- " << endl << endl;
+    output = popen(pingCommand.c_str(), "r");
+    if (!output){
+        fprintf (stderr, "incorrect parameters or too many files.\n");
+        return EXIT_FAILURE;
+    }
+    return pclose(output);
+}
 
 void errorAppName(){
     cout << red << "Please define a name for the application." << ncl << endl << endl;
@@ -62,6 +129,27 @@ int displayHelp(int argc, const char * argv[]){
 
     if (argc > 1 && argv[2] != NULL){
 
+        if (string(argv[2]) == "test") {
+            cout << cya << endl;
+            printf("Usage: %s test\n\n", argv[0]);
+            printf("Tests the servers availability and user's permissions.\n");
+            cout << ncl << endl;
+            return 0;
+        } else
+
+        if (string(argv[2]) == "server") {
+            cout << cya << endl;
+            printf("Usage: %s server <server>\n\n", argv[0]);
+            cout <<
+            
+                "If no parameters are used, shows the current server's address.\n" <<
+                "With one parameter, stores the new server address.\n" <<
+                "The address can be an IP or host name (i.e. hosts file DNS).\n";
+
+            cout << ncl << endl;
+            return 0;
+        } else
+
         if (string(argv[2]) == "list") {
             cout << cya << endl;
             printf("Usage: %s list\n\n", argv[0]);
@@ -71,7 +159,7 @@ int displayHelp(int argc, const char * argv[]){
         } else
         
         if (string(argv[2]) == "status") {
-            cout << cya << endl;
+            cout << cya << endl;//[-a application]
             printf("Usage: %s status [application name | [-a|--app] application name]\n\n", argv[0]);
             printf("Lists the details of the given application, namely:\n");
             printf("  - URL\n");
@@ -135,8 +223,10 @@ int displayHelp(int argc, const char * argv[]){
     }
 
     cout << cya << endl;
-    printf("Usage: %s COMMAND [--app APP] [command-specific-options]\n\n", argv[0]);
+    printf("Usage: %s COMMAND [command-specific-options]\n\n", argv[0]);
     printf("Primary help topics, type \"%s help TOPIC\" for more details:\n\n", argv[0]);
+    printf("  test      #  test permissions and availability\n");
+    printf("  server    #  show/set a server address\n");
     printf("  list      #  list installed applications\n");
     printf("  status    #  display information about an application\n");
     printf("  create    #  creates a new application's repository and config files\n");
@@ -162,19 +252,61 @@ int main (int argc, const char * argv[]) {
     char trigger[64] = "\\$HOME/trigger.sh";
 
     // Variables variables?
-    string command   = "";
-    string shellCmd2 = "";
-    string appName   = "";
-    string appAddr   = "";
-    string servers   = "";
+    string command    = "";
+    string shellCmd2  = "";
+    string appName    = "";
+    string appAddr    = "";
+    string servers    = "";
+
+    string userName   = exec(const_cast<char *>("whoami"));
+    string configDir  = "/Users/" + userName.substr(0,userName.length()-1)  + "/Library/Application Support/RDH/";
+    string configFile = configDir + "config";
+    string serverAddr = readConfig(const_cast<char *>(configFile.c_str()));
+    // The name comes with a line-break.
+    //http://stackoverflow.com/questions/7468286/warning-deprecated-conversion-from-string-constant-to-char
 
     // Check arguments number and display help if necessary
 
     if ( argc == 1 || string(argv[1]) == "help" ) {
         displayHelp(argc, argv);
         return 0;
+
+    } else if ( argc == 1 || string(argv[1]) == "server" ) {
+        if(argv[2] == NULL){
+            // cout << "argh!" << endl;
+            if (serverAddr == ""){
+                cout << cya << endl;
+                printf("No server is defined.\nDefine a server address using '%s server <server>'.\n", argv[0]);
+                cout << ncl << endl;
+            }else{
+                cout << cya << endl;
+                cout << "Server: " << serverAddr.c_str() << endl;
+                cout << ncl << endl;
+            }
+            return 0;
+        } else {
+            cout << cya << endl;
+            cout << "Setting server..." << ncl << endl;
+            return saveConfig(const_cast<char *>(configDir.c_str()), argv[2]);
+        }
+        // return 0;
     } else {
-        command = argv[1];
+        if (serverAddr == ""){
+            cout << red << endl;
+            printf("Please define a server address using '%s server <server>'.\n", argv[0]);
+            cout << ncl << endl;
+            return 1;
+        } else {
+            // cout << "Server: " << serverAddr.c_str() << endl;
+            // if (checkOnlineServer(serverAddr) == 0){
+                command = argv[1];
+            // }else{
+                // cout << red << endl;
+                // cout << "Server seems to be offline!" << endl;
+                // cout << ncl << endl;
+                // return 0;
+            // }
+        }
     }
 
     //----------------------------------------------------------------------------
@@ -226,7 +358,7 @@ int main (int argc, const char * argv[]) {
             }
 
         } else if (
-               string(argv[i]) == "-dbg"
+               string(argv[i]) == "-db"
             || string(argv[i]) == "--debug"
         ) {
             debugging = 1;
@@ -251,7 +383,7 @@ int main (int argc, const char * argv[]) {
 
     if (debugging == 1){
         cout << endl << cya;
-        printf("Server: %s\nArgc: %d\n", server, argc);
+        printf("Server: %s\nArgc: %d\n", serverAddr.c_str(), argc);
         cout << ncl;
     }
 
@@ -271,7 +403,15 @@ int main (int argc, const char * argv[]) {
             if ( argv[2] ) appName = argv[2];
     }
 
-    if ( command == "restart" ){
+    if ( command == "test" ){
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // Test server
+        // this test
+ 
+
+        snprintf(shellCmd, 512, "test");
+
+    } else if ( command == "restart" ){
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         // Restart thin / nginx
         // this restart app
@@ -289,7 +429,7 @@ int main (int argc, const char * argv[]) {
         // List
         // this list
 
-        snprintf(shellCmd, 512, "list", user, server, action, trigger);
+        snprintf(shellCmd, 512, "list");
 
     } else if ( command == "status" ){
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -353,7 +493,7 @@ int main (int argc, const char * argv[]) {
 
     }
 
-    snprintf(fullCmd, 512, "ssh %s@%s \"%s %s %s\"", user, server, action, trigger, shellCmd);
+    snprintf(fullCmd, 512, "ssh %s@%s \"%s %s %s\"", user, serverAddr.c_str(), action, trigger, shellCmd);
 
     //----------------------------------------------------------------------------
     // Executing
@@ -362,7 +502,7 @@ int main (int argc, const char * argv[]) {
         printf("cmd: [%s]", fullCmd);
         cout << ncl << endl;
     } else {
-        // system((char *)fullCmd);
+        system((char *)fullCmd);
     }
 
     return 0;
