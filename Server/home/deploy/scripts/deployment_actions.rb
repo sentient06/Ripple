@@ -556,8 +556,8 @@ class DeploymentActions
 
   def test
 
-    ptStatic "Printing global variables"
-    ptStatic "-------------------------"
+    print "#{@cya}Printing global variables#{@ncl}\n"
+    print "#{@cya}-------------------------#{@ncl}\n"
     print "#{@cya}DeployerUser         = #{@gre}#{@deployerUser}#{@ncl}\n"
     print "#{@cya}GitUser              = #{@gre}#{@gitUser}#{@ncl}\n"
     print "#{@cya}DataFile             = #{@gre}#{@dataFile}#{@ncl}\n"
@@ -568,11 +568,11 @@ class DeploymentActions
     print "#{@cya}NginxAvailableFolder = #{@gre}#{@nginxAvailableFolder}#{@ncl}\n"
     print "#{@cya}NginxEnabledFolder   = #{@gre}#{@nginxEnabledFolder}#{@ncl}\n"
     print "\n"
-    ptStatic "Executing system commands"
-    ptStatic "-------------------------"
-    print "whoami: "
+    print "#{@cya}Executing system commands#{@ncl}\n"
+    print "#{@cya}-------------------------#{@ncl}\n"
+    print "whoami ............... "
     system("whoami")
-    print "sudo -u git whoami"
+    print "sudo -u git whoami ... "
     system("sudo -u git whoami")
 
   end
