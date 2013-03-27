@@ -3,6 +3,10 @@
 require '/home/deploy/scripts/deployment_actions.rb'
 deployer = DeploymentActions.new
 
+if ARGV[0] == 'test'
+    deployer.test
+end
+
 if ARGV[0] == 'list'
     deployer.list
 end
