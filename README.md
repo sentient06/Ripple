@@ -20,6 +20,8 @@ First, use admin to execute `sudo visudo`:
     deploy   ALL=(ALL) NOPASSWD: /usr/sbin/service nginx start, /usr/sbin/service nginx stop
     deploy   ALL=(ALL) NOPASSWD: /usr/sbin/service thin start, /usr/sbin/service thin stop
 
+###Git repository:
+
 Then do the following to allocate the repository:
 
     cd /
@@ -81,4 +83,34 @@ Then do the following to allocate the repository:
 
     sudo -u git chmod +x ./post-update
     sudo -u deploy git clone /rdh/RDH.git /rdh/master
-    sudo -u sh ./RDH.git/hooks/post-update
+    exit
+
+##Client computer
+
+###Git repository
+
+Now, use git in your client computer to clone RDH and add your server as a remote host, something like:
+
+    git clone git@github.com:sentient06/RDH.git
+    git add remote myserver git@myserver:/rdh/RDH.git
+    git push myserver master
+
+###Client application & RSA key
+
+To make the mac client usefull, I would recomend adding a symbolic link to your `/usr/local/bin/` directory.
+
+Also, add your RSA key to the user bot in your server:
+
+    ln -s /Users/<path-to-RDH>/RDH/Client/a.out /usr/local/bin/rdh
+    scp ~/.ssh/id_rsa.pub bot@myserver:~
+    ssh bot@myserver
+    cat ~/id_rsa.pub >> ~/.ssh/authorized_keys
+    rm ~/id_rsa.pub
+    exit
+
+###Try it!
+
+Now you can execute all RDH actions using your `rdh` command and if you want to make any changes, you can commit to your server.
+
+    rdh server myserver
+    rdh test
