@@ -28,7 +28,15 @@
 //  POSSIBILITY OF SUCH DAMAGE.
 //
 // ------------------------------------------------------------------------------
-
+//  - -- --- ---- ==== ===== > >> !!! WARNING !!! << < ===== ==== ---- --- -- -
+//
+// This code was done in a macintosh computer and will not work properly in a
+// different system without adaptations!
+// ------------------------------------------------------------------------------
+// Also, the code is not properly sanitised. Do not trust the access to such an
+// application to someone likely to mess up with your server.
+// ------------------------------------------------------------------------------
+//
 // g++ rdh.cpp
 // ./a.out list
 // ln -s /Users/<path>/RDH/Client/a.out /usr/local/bin/rdh
@@ -121,7 +129,7 @@ int checkOnlineServer(string serverAddr){
 }
 
 /**
- * Display error message for missing application's name.
+ * Displays error message for missing application's name.
  */
 void errorAppName(){
     cout << red << "Please define a name for the application." << ncl << endl << endl;
@@ -135,6 +143,9 @@ void errorAppAddrAndServer(){
     cout << red << "Please define the URL and/or the number of ports." << ncl << endl << endl;
 }
 
+/**
+ * Displays help messages for virtually all supported commands.
+ */
 int displayHelp(int argc, const char * argv[]){
 
     if (argc > 1 && argv[2] != NULL){
