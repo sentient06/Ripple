@@ -601,6 +601,7 @@ class DeploymentActions
     }
 
     print "\n"
+
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -711,23 +712,9 @@ class DeploymentActions
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  # Changes application's parameters
-  #
-  # def setParameters(appName, parameters, values)
-  # end
-
-  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Check database information and create it if needed
   #
   def deployDatabase(appName)
-
-    # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-    # Check data:
-
-    if @apps[appName]["db"] == true
-      ptGreen "Database already set. Nothing to do here."
-      return
-    end
 
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Check DB information on application:
@@ -881,6 +868,9 @@ class DeploymentActions
     # Deploy database
 
     ptNormal "[Checking database]"
+
+    # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+    # Check data:
 
     if @apps[appName]["db"] == false
       deployDatabase appName

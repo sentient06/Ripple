@@ -435,7 +435,33 @@ int main (int argc, const char * argv[]) {
     } else if ( command == "restart" ){
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         // Restart thin / nginx
-        // this restart app
+        // this restart app [thin | nginx]
+ 
+        if (appName.empty()){
+            cout << "Restarting all apps...\n" << endl;
+            snprintf(shellCmd, 512, "restart");
+        } else {
+            printf("Restarting %s...\n", appName.c_str() );
+            snprintf(shellCmd, 512, "restart %s", appName.c_str() );
+        }
+
+    } else if ( command == "stop" ){
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // Restart thin / nginx
+        // this stop app [thin | nginx]
+ 
+        if (appName.empty()){
+            cout << "Restarting all apps...\n" << endl;
+            snprintf(shellCmd, 512, "restart");
+        } else {
+            printf("Restarting %s...\n", appName.c_str() );
+            snprintf(shellCmd, 512, "restart %s", appName.c_str() );
+        }
+
+    } else if ( command == "start" ){
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // Restart thin / nginx
+        // this start app [thin | nginx]
  
         if (appName.empty()){
             cout << "Restarting all apps...\n" << endl;
