@@ -424,6 +424,10 @@ int main (int argc, const char * argv[]) {
             if ( argv[2] ) appName = argv[2];
     }
 
+    if (debugging == 1){
+        cout << cya << "App name: " << appName.c_str() << ncl << endl;
+    }
+
     if ( command == "test" ){
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         // Test server
@@ -432,44 +436,66 @@ int main (int argc, const char * argv[]) {
 
         snprintf(shellCmd, 512, "test");
 
-    } else if ( command == "restart" ){
+    } else if ( command == "thin" || command == "nginx" ){
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        // Restart thin / nginx
-        // this restart app [thin | nginx]
- 
-        if (appName.empty()){
-            cout << "Restarting all apps...\n" << endl;
-            snprintf(shellCmd, 512, "restart");
-        } else {
-            printf("Restarting %s...\n", appName.c_str() );
-            snprintf(shellCmd, 512, "restart %s", appName.c_str() );
+        // Restart / start / stop -> thin / nginx
+        if (
+            string(argv[2]) == "start"
+         || string(argv[2]) == "stop"
+         || string(argv[2]) == "restart"
+        ) {
+
+            if ( command == "nginx" || appName == string(argv[2]) || appName.empty() ) {
+                snprintf(shellCmd, 512, "%s %s", command.c_str(), argv[2]);
+            }else{
+                snprintf(shellCmd, 512, "%s %s %s", command.c_str(), argv[2], appName.c_str());
+            }
+
         }
 
-    } else if ( command == "stop" ){
+    } else if ( command == "enable"){
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        // Restart thin / nginx
-        // this stop app [thin | nginx]
- 
-        if (appName.empty()){
-            cout << "Restarting all apps...\n" << endl;
-            snprintf(shellCmd, 512, "restart");
-        } else {
-            printf("Restarting %s...\n", appName.c_str() );
-            snprintf(shellCmd, 512, "restart %s", appName.c_str() );
+        // Enable nginx config
+
+        if ( appName.empty() ) {
+            errorAppName();
+            return 1;
         }
 
-    } else if ( command == "start" ){
+        snprintf(shellCmd, 512, "enable %s", appName.c_str());
+
+    } else if ( command == "disable"){
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        // Restart thin / nginx
-        // this start app [thin | nginx]
- 
-        if (appName.empty()){
-            cout << "Restarting all apps...\n" << endl;
-            snprintf(shellCmd, 512, "restart");
-        } else {
-            printf("Restarting %s...\n", appName.c_str() );
-            snprintf(shellCmd, 512, "restart %s", appName.c_str() );
+        // Disable nginx config
+
+        if ( appName.empty() ) {
+            errorAppName();
+            return 1;
         }
+
+        snprintf(shellCmd, 512, "disable %s", appName.c_str());
+
+    } else if ( command == "avail"){
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // Creates new nginx config
+
+        if ( appName.empty() ) {
+            errorAppName();
+            return 1;
+        }
+
+        snprintf(shellCmd, 512, "avail %s", appName.c_str());
+
+    } else if ( command == "hinder"){
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // Deletes nginx config
+
+        if ( appName.empty() ) {
+            errorAppName();
+            return 1;
+        }
+
+        snprintf(shellCmd, 512, "hinder %s", appName.c_str());
 
     } else if ( command == "list" ){
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
