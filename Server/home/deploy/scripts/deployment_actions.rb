@@ -1013,7 +1013,7 @@ class DeploymentActions
     newHash.each {|key, value|
       # ptGreen "#{key} = #{value}"
       @apps[appName][key] = value
-      if key == "url"
+      if key == "ports"
         resetPorts = true
       end
     }
@@ -1022,7 +1022,7 @@ class DeploymentActions
     saveData
 
     ptConfirm
-    
+
     if resetPorts
       resetApplicationData
     end
