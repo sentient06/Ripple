@@ -343,6 +343,8 @@ class DeploymentActions
 
   def enableNginxConfigFile(appName)
 
+    puts "I'm in!"
+
     nginxConfigFile = "#{@nginxAvailableFolder}#{appName}.conf"
     nginxConfigLink = "#{@nginxEnabledFolder}#{appName}.conf"
     ptNormal "Checking Nginx config file"
@@ -350,25 +352,25 @@ class DeploymentActions
     if File.exists?(nginxConfigFile)
       unless File.exists?(nginxConfigLink)
         ptConfirm
+        ptNormal "Linking"
         action = systemCmd("ln -s #{nginxConfigFile} #{nginxConfigLink}")
-        unless action.success?
+        if action.success?
+          ptConfirm
+          @apps[appName]["enabled"] = true
+          saveData
+        else
           ptError "Could not symlink Nginx configuration file"
-          return
         end
       end
     else
       ptError "Config file non-existent"
-      return
     end
-
-    @apps[appName]["enabled"] = false
-    saveData
 
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-  def deleteNginxConfigFile(appName)
+  def disableNginxConfigFile(appName)
 
     nginxConfigFile = "#{@nginxAvailableFolder}#{appName}.conf"
     nginxConfigLink = "#{@nginxEnabledFolder}#{appName}.conf"
@@ -379,15 +381,23 @@ class DeploymentActions
 
       if nginxCmd1.success?
         @apps[appName]["enabled"] = false
-        saveData
         ptConfirm
+        saveData
       else
         ptError "Could not delete configuration symlink for #{appName}"
-        return
       end
+
     else
       ptGreen "No symlink found."
     end
+
+  end
+
+  def deleteNginxConfigFile(appName) #hinder?
+
+    disableNginxConfigFile(appName)
+
+    nginxConfigFile = "#{@nginxAvailableFolder}#{appName}.conf"
 
     if File.exists?(nginxConfigFile)
 

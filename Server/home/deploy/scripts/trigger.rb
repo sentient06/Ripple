@@ -3,6 +3,9 @@
 require '/home/deploy/scripts/deployment_actions.rb'
 deployer = DeploymentActions.new
 
+#-------------------------------------------------------------------------------
+# Working
+
 if ARGV[0] == 'test'
     deployer.test
 end
@@ -22,6 +25,33 @@ end
 if ARGV[0] == 'set'
     deployer.setParameters ARGV[1], ARGV[2]
 end
+
+#-------------------------------------------------------------------------------
+# Testing
+
+# Nginx symbolic link:
+
+if ARGV[0] == 'enable'
+    puts "ok"
+    deployer.enableNginxConfigFile(ARGV[1])
+end
+
+if ARGV[0] == 'disable'
+    deployer.disableNginxConfigFile(ARGV[1])
+end
+
+# Nginx real config files:
+
+if ARGV[0] == 'avail'
+    deployer.availNginxConfigFile(ARGV[1])
+end
+
+if ARGV[0] == 'hinder'
+    deployer.deleteNginxConfigFile(ARGV[1])
+end
+
+#-------------------------------------------------------------------------------
+# Old (check)
 
 if ARGV[0] == 'destroy'
     deployer.destroy ARGV[1]
