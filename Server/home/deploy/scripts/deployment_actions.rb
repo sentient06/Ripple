@@ -1008,9 +1008,14 @@ class DeploymentActions
     # puts newHash
     ptNormal "Setting new values"
 
+    resetPorts = false
+
     newHash.each {|key, value|
       # ptGreen "#{key} = #{value}"
       @apps[appName][key] = value
+      if key == "url"
+        resetPorts = true
+      end
     }
 
     # @apps[appName][key] = value
@@ -1018,6 +1023,9 @@ class DeploymentActions
 
     ptConfirm
     
+    if resetPorts
+      resetApplicationData
+    end
     # resetAll
 
   end
