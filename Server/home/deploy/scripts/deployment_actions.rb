@@ -343,8 +343,6 @@ class DeploymentActions
 
   def enableNginxConfigFile(appName)
 
-    puts "I'm in!"
-
     nginxConfigFile = "#{@nginxAvailableFolder}#{appName}.conf"
     nginxConfigLink = "#{@nginxEnabledFolder}#{appName}.conf"
     ptNormal "Checking Nginx config file"
@@ -1007,14 +1005,19 @@ class DeploymentActions
       h
     end
 
-    puts newHash
+    # puts newHash
+    ptNormal "Setting new values"
 
     newHash.each {|key, value|
+      # ptGreen "#{key} = #{value}"
       @apps[appName][key] = value
     }
 
     # @apps[appName][key] = value
-    # saveData
+    saveData
+
+    ptConfirm
+    
     # resetAll
 
   end

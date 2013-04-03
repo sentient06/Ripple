@@ -4,7 +4,7 @@ require '/home/deploy/scripts/deployment_actions.rb'
 deployer = DeploymentActions.new
 
 #-------------------------------------------------------------------------------
-# Working
+# General actions
 
 if ARGV[0] == 'test'
     deployer.test
@@ -13,6 +13,9 @@ end
 if ARGV[0] == 'list'
     deployer.list
 end
+
+#-------------------------------------------------------------------------------
+# Application actions
 
 if ARGV[0] == 'status'
     deployer.appStatus ARGV[1]
@@ -27,12 +30,9 @@ if ARGV[0] == 'set'
 end
 
 #-------------------------------------------------------------------------------
-# Testing
-
 # Nginx symbolic link:
 
 if ARGV[0] == 'enable'
-    puts "ok"
     deployer.enableNginxConfigFile(ARGV[1])
 end
 
@@ -49,6 +49,9 @@ end
 if ARGV[0] == 'hinder'
     deployer.deleteNginxConfigFile(ARGV[1])
 end
+
+#-------------------------------------------------------------------------------
+# Testing
 
 #-------------------------------------------------------------------------------
 # Old (check)
