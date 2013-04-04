@@ -192,13 +192,25 @@ class DeploymentActions
     port = 3000
 
     ptNormal "Setting ports"
+    thinConfigChange = Array.new
+    nginxConfigChange = Array.new
 
     # Iterates through all apps to store correct ports:
     @apps.each {|key, value|
       value["ports"].times do |i|
         print "\r"
         if i == 0
-          value["first"] = port
+          
+          if value["first"] != port
+            value["first"] = port
+            if value["thin"] == true
+              thinConfigChange.push(value['name'])
+            end
+            if value["available"] == true
+              nginxConfigChange.push(value['name'])
+            end
+          end
+
         end
         # puts "#{@gre} - Port #{port} - #{key}#{@ncl}"
         port += 1
@@ -207,6 +219,22 @@ class DeploymentActions
 
     ptConfirm
     saveData
+
+    return
+
+    # to test:
+
+    if thinConfigChange.length > 0
+      thinConfigChange.each { |app|
+        saveThinConfigFile(app)
+      }
+    end
+
+    if nginxConfigChange.length > 0
+      nginxConfigChange.each { |app|
+        availNginxConfigFile(app)
+      }
+    end
 
   end
 
@@ -1025,6 +1053,7 @@ class DeploymentActions
 
     if resetPorts
       resetApplicationData
+      ptNormal "Warning: double-check the applications' ports and thin files."
     end
     # resetAll
 
