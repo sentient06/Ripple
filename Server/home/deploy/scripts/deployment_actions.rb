@@ -611,6 +611,8 @@ class DeploymentActions
     system("whoami")
     print "sudo -u git whoami ... "
     system("sudo -u git whoami")
+    print "rvmsudo echo 2013 .... "
+    system("rvmsudo echo 2013")
     print "\n"
 
   end

@@ -268,7 +268,7 @@ int main (int argc, const char * argv[]) {
     char fullCmd[512];
 
     char user[16]    = "bot";
-    char server[11]  = "ubuntu12";
+    // char server[11]  = "ubuntu12";
     char action[8]  = "sh";
     char trigger[64] = "\\$HOME/trigger.sh";
 
