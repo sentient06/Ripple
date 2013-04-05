@@ -976,7 +976,7 @@ class DeploymentActions
     if deployStep5.success?
       ptConfirm
     else
-      ptError "Could not deploy step 5 - assets precompile"
+      ptError "Could not precompile assets"
       exit
     end
 
