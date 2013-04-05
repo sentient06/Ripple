@@ -509,22 +509,6 @@ class DeploymentActions
     end
   end
 
-  def startApp(appName)
-    stopNginx
-    startThin(appName)
-    startNginx
-    @apps[appName]["online"] = true
-    saveData
-  end
-
-  def stopApp(appName)
-    stopNginx
-    stopThin(appName)
-    startNginx
-    @apps[appName]["online"] = false
-    saveData
-  end
-
   def startThin(appName)
     ptNormal "Starting thin for #{appName}"
     command = systemCmd( "thin start -C /etc/thin/#{appName}.yml" )
@@ -547,12 +531,26 @@ class DeploymentActions
     end
   end
 
-  def resetServers
+  def startApp(appName)
+    stopNginx
+    startThin(appName)
+    startNginx
+    @apps[appName]["online"] = true
+    saveData
+  end
 
+  def stopApp(appName)
+    stopNginx
+    stopThin(appName)
+    startNginx
+    @apps[appName]["online"] = false
+    saveData
+  end
+
+  def resetServers
     ptNormal "Restarting servers"
     stopServers
     startServers
-
   end
 
   def stopServers
@@ -782,8 +780,7 @@ class DeploymentActions
 
     unless File.exists?(dbConfigFile)
       ptError "Database file does not exist"
-      @stop = true
-      return
+      exit
     end
 
     dbDetails = YAML.load_file(dbConfigFile)
@@ -792,11 +789,11 @@ class DeploymentActions
     # Load information:
 
     productionDB = dbDetails['production']
-    ptNormal "Production db details:"
-    puts productionDB
+    # ptStatic "Production DB details:"
+    # puts productionDB
 
     if productionDB.nil?
-      ptNormal "Nothing to do with the database"
+      ptGreen "Nothing to do with the database"
       return
     end
 
@@ -818,63 +815,59 @@ class DeploymentActions
     dbPass = productionDB['password']
 
     if dbPass.nil?
-      ptNormal "No password, ignoring database"
-      @stop = true
-      return
+      ptError "No password, ignoring database"
+      exit
     end
 
-    ptNormal "Name: #{dbName}"
-    ptNormal "User: #{dbUser}"
-    ptNormal "Pass: #{dbPass}"
+    # ptNormal "Name: #{dbName}"
+    # ptNormal "User: #{dbUser}"
+    # ptNormal "Pass: #{dbPass}"
 
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Checking user:
 
     ptNormal "Checking DB user existence"
-    userExistent = checkDbUser dbUser
+    userExistent = checkDbUser(dbUser)
+    ptConfirm
 
-    unless userExistent
-
-      ptConfirm
+    if userExistent
+      ptGreen "User registered."
+    else
+      ptGreen "No user defined."
       ptNormal "Creating new user '#{dbUser}'"
 
-      newUser = createDbUser dbUser, dbPass
+      newUser = createDbUser(dbUser, dbPass)
+
       unless newUser
         ptError "Unable to create DB user"
-        @stop = true
-        return
+        exit
       else
         userExistent = true
         ptConfirm
       end
-
-    else
-      ptConfirm
     end
 
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Checking database:
 
-    ptNormal "Checking DB existence"
-    dbExistent = checkDb dbName
+    ptNormal "Checking database existence"
+    dbExistent = checkDb(dbName)
 
-    unless dbExistent
-
+    if dbExistent
       ptConfirm
+    else
+      ptGreen "No database defined."
       ptNormal "Creating new database"
 
       newDB = createProductionDb(dbUser, dbName)
-      unless newDB
-        ptError "Unable to create database"
-        @stop = true
-        return
-      else
+
+      if newDB
         dbExistent = true
         ptConfirm
+      else
+        ptError "Unable to create database"
+        exit
       end
-
-    else
-        ptConfirm
     end
 
     if userExistent && dbExistent
@@ -915,25 +908,21 @@ class DeploymentActions
     # If already online, stop thin.
 
     if @apps[appName]["online"]
-      stopNginx
-      stopThin(appName)
-      startNginx
-      @apps[appName]["online"] = false
-      saveData
+      stopApp(appName)
     end
 
     # Deploy database
 
-    ptNormal "[Checking database]"
+    ptNormal "Checking database"
 
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Check data:
 
     if @apps[appName]["db"] == false
+      ptGreen "No database on record."
       deployDatabase appName
-      if @stop == true
-        return
-      end
+    else
+      ptConfirm
     end
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -947,8 +936,8 @@ class DeploymentActions
     if deployStep2.success?
       ptConfirm
     else
-      ptError "Could not deploy step 2 - bundle package"
-      return
+      ptError "Could not bundle package"
+      exit
     end
 
     ptNormal "Executing 'bundle install'"
@@ -957,8 +946,8 @@ class DeploymentActions
     if deployStep3.success?
       ptConfirm
     else
-      ptError "Could not deploy step 3 - bundle install"
-      return
+      ptError "Could not bundle install"
+      exit
     end
 
     # Check for migrations!
@@ -975,8 +964,8 @@ class DeploymentActions
       if deployStep4.success?
         ptConfirm
       else
-        ptError "Could not deploy step 4 - database migrate"
-        return
+        ptError "Could not migrate database"
+        exit
       end
 
     end
@@ -988,14 +977,12 @@ class DeploymentActions
       ptConfirm
     else
       ptError "Could not deploy step 5 - assets precompile"
-      return
+      exit
     end
 
     # If all is fine, start thin, restart nginx.
 
-    stopNginx
-    startThin appName
-    startNginx
+    startApp(appName)
 
   end
 
