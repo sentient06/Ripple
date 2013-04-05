@@ -488,43 +488,58 @@ class DeploymentActions
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   def startNginx
+    ptNormal "Starting Nginx"
     actionNginx = systemCmd( "sudo service nginx start" )
-    unless actionNginx.success?
-      ptError "Could not start Nginx"
-      return
+    if command.success?
+      ptConfirm
     else
-      # ptConfirm
+      ptError "Could not start Nginx"
+      exit
     end
   end
 
   def stopNginx
-    # ptNormal "Stopping Nginx"
+    ptNormal "Stopping Nginx"
     command = systemCmd( "sudo service nginx stop" )
-    unless command.success?
-      ptError "Could not stop Nginx"
-      return
+    if command.success?
+      ptConfirm
     else
-      # ptConfirm
+      ptError "Could not stop Nginx"
+      exit
     end
   end
 
+  def startApp(appName)
+    stopNginx
+    startThin(appName)
+    startNginx
+  end
+
+  def stopApp(appName)
+    stopNginx
+    stopThin(appName)
+    startNginx
+  end
+
   def startThin(appName)
+    ptNormal "Starting thin for #{appName}"
     command = systemCmd( "thin start -C /etc/thin/#{appName}.yml" )
-    unless command.success?
-      ptError "Could not start Thin"
-      return
+    if command.success?
+      ptConfirm
     else
-      # ptConfirm
+      ptError "Could not start Thin"
+      exit
     end
   end
 
   def stopThin(appName)
+    ptNormal "Stopping thin for #{appName}"
     command = systemCmd( "thin stop -C /etc/thin/#{appName}.yml" )
-    unless command.success?
-      ptError "Could not stop Thin"
-      return
+    if command.success?
+      ptConfirm
     else
-      # ptConfirm
+      ptError "Could not stop Thin"
+      exit
     end
   end
 
@@ -611,8 +626,8 @@ class DeploymentActions
     system("whoami")
     print "sudo -u git whoami ... "
     system("sudo -u git whoami")
-    print "rvmsudo echo 2013 .... "
-    system("rvmsudo echo 2013")
+    # print "rvmsudo echo 2013 .... "
+    # system("rvmsudo echo 2013")
     print "\n"
 
   end
