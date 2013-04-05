@@ -489,7 +489,7 @@ class DeploymentActions
 
   def startNginx
     ptNormal "Starting Nginx"
-    actionNginx = systemCmd( "sudo service nginx start" )
+    command = systemCmd( "sudo service nginx start" )
     if command.success?
       ptConfirm
     else
