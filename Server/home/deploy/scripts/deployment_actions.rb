@@ -513,12 +513,16 @@ class DeploymentActions
     stopNginx
     startThin(appName)
     startNginx
+    @apps[appName]["online"] = true
+    saveData
   end
 
   def stopApp(appName)
     stopNginx
     stopThin(appName)
     startNginx
+    @apps[appName]["online"] = false
+    saveData
   end
 
   def startThin(appName)
