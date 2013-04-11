@@ -50,8 +50,20 @@ if ARGV[0] == 'hinder'
     deployer.deleteNginxConfigFile(ARGV[1])
 end
 
+# Starts and stops Nginx and Thin accordinly:
+
+if ARGV[0] == 'start'
+    deployer.startApp(ARGV[1])
+end
+
+if ARGV[0] == 'stop'
+    deployer.stopApp(ARGV[1])
+end
+
 #-------------------------------------------------------------------------------
 # Testing
+
+
 
 #-------------------------------------------------------------------------------
 # Old (check)

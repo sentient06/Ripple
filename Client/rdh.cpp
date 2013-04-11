@@ -268,7 +268,7 @@ int main (int argc, const char * argv[]) {
     char fullCmd[512];
 
     char user[16]    = "bot";
-    char server[11]  = "ubuntu12";
+    // char server[11]  = "ubuntu12";
     char action[8]  = "sh";
     char trigger[64] = "\\$HOME/trigger.sh";
 
@@ -496,6 +496,28 @@ int main (int argc, const char * argv[]) {
         }
 
         snprintf(shellCmd, 512, "hinder %s", appName.c_str());
+
+    } else if ( command == "start"){
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // Starts Thin
+
+        if ( appName.empty() ) {
+            errorAppName();
+            return 1;
+        }
+
+        snprintf(shellCmd, 512, "start %s", appName.c_str());
+
+    } else if ( command == "stop"){
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // Stops Thin
+
+        if ( appName.empty() ) {
+            errorAppName();
+            return 1;
+        }
+
+        snprintf(shellCmd, 512, "stop %s", appName.c_str());
 
     } else if ( command == "list" ){
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
