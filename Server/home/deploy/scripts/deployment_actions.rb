@@ -91,33 +91,35 @@ class DeploymentActions
     puts "dataFile\nrepositoriesFolder\ntemplatesFolder\nproductionFolder\ndatabaseYml\nlastMsg\napps"
   end
 
-  def dataFile
-    @dataFile
-  end
+  attr_reader :dataFile, :repositoriesFolder, :templatesFolder, :productionFolder, :databaseYml, :lastMsg, :apps
 
-  def repositoriesFolder
-    @repositoriesFolder
-  end
+  # def dataFile
+  #   @dataFile
+  # end
 
-  def templatesFolder
-    @templatesFolder
-  end
+  # def repositoriesFolder
+  #   @repositoriesFolder
+  # end
 
-  def productionFolder
-    @productionFolder
-  end
+  # def templatesFolder
+  #   @templatesFolder
+  # end
 
-  def databaseYml
-    @databaseYml
-  end
+  # def productionFolder
+  #   @productionFolder
+  # end
 
-  def lastMsg
-    @lastMsg
-  end
+  # def databaseYml
+  #   @databaseYml
+  # end
 
-  def apps
-    @apps
-  end
+  # def lastMsg
+  #   @lastMsg
+  # end
+
+  # def apps
+  #   @apps
+  # end
 
   #-------------------------------------------------------------------------------
   # Print methods
