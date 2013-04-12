@@ -93,34 +93,6 @@ class DeploymentActions
 
   attr_reader :dataFile, :repositoriesFolder, :templatesFolder, :productionFolder, :databaseYml, :lastMsg, :apps
 
-  # def dataFile
-  #   @dataFile
-  # end
-
-  # def repositoriesFolder
-  #   @repositoriesFolder
-  # end
-
-  # def templatesFolder
-  #   @templatesFolder
-  # end
-
-  # def productionFolder
-  #   @productionFolder
-  # end
-
-  # def databaseYml
-  #   @databaseYml
-  # end
-
-  # def lastMsg
-  #   @lastMsg
-  # end
-
-  # def apps
-  #   @apps
-  # end
-
   #-------------------------------------------------------------------------------
   # Print methods
 
@@ -243,7 +215,7 @@ class DeploymentActions
   #---------------------------------------------------------------------------
   # Secondary methods
 
-  def createRepository(appName)
+  def createRepository(appName, createHook=true)
 
     # Checks for repository:
 
@@ -264,8 +236,7 @@ class DeploymentActions
       ptConfirm
     else
       ptError "Could not create git folder"
-      @stop = true
-      return      
+      exit     
     end
 
     # Creates git bare respository
@@ -278,23 +249,22 @@ class DeploymentActions
       ptConfirm
     else
       ptError "Could not create git repository"
-      @stop = true
-      return
+      exit
     end
 
     # Saves the post-update hook:
+    if createHook==true
+      ptNormal "Creating hooks for #{appName}"
 
-    ptNormal "Creating hooks for #{appName}"
+      createHook = systemCmd("sudo -u #{@gitUser} /usr/local/rvm/bin/ruby /home/#{@gitUser}/scripts/createHook.rb #{appName}")
 
-    createHook = systemCmd("sudo -u #{@gitUser} /usr/local/rvm/bin/ruby /home/#{@gitUser}/scripts/createHook.rb #{appName}")
-
-    if createHook.success?
-      ptConfirm
-    else
-      print "\n"
-      ptError "Could not create hook"
-      @stop = true
-      return
+      if createHook.success?
+        ptConfirm
+      else
+        print "\n"
+        ptError "Could not create hook"
+        exit
+      end
     end
 
     @apps[appName]["repository"] = true
@@ -315,8 +285,7 @@ class DeploymentActions
       ptConfirm
     else
       ptError "Repository could not be cloned"
-      @stop = true
-      return
+      exit
     end
 
     # Permissions to 775:
@@ -329,8 +298,7 @@ class DeploymentActions
       ptConfirm
     else
       ptError "Could not change repository's permissions"
-      @stop = true
-      return
+      exit
     end
 
   end
@@ -590,6 +558,7 @@ class DeploymentActions
 
   def checkDbUser(dbUser)
     action = systemCmd("sudo -u postgres psql -c '\\du' | grep #{dbUser}")
+    action.success?
   end
 
   def createDbUser(dbUser, dbPassword)
