@@ -135,11 +135,11 @@ class DeploymentActions
   # System actions
 
   # Returns a process object.
-  def systemCmd(commandStr)
+  # def systemCmd(commandStr)
 
-    @system.execute(commandStr)
+  #   @system.execute(commandStr)
 
-  end
+  # end
 
   #-------------------------------------------------------------------------------
   # File methods
@@ -237,7 +237,7 @@ class DeploymentActions
 
     ptNormal "Creating repository folder for #{appName}"
 
-    createFolder = systemCmd("sudo -u #{@gitUser} mkdir #{repositoryFolder}")
+    createFolder = @system.execute("sudo -u #{@gitUser} mkdir #{repositoryFolder}")
 
     if createFolder.success?
       ptConfirm
@@ -250,7 +250,7 @@ class DeploymentActions
 
     ptNormal "Creating bare repository for #{appName}"
 
-    createGit = systemCmd("sudo -u #{@gitUser} git init #{repositoryFolder}/ --bare")
+    createGit = @system.execute("sudo -u #{@gitUser} git init #{repositoryFolder}/ --bare")
 
     if createGit.success?
       ptConfirm
@@ -263,7 +263,7 @@ class DeploymentActions
     if createHook==true
       ptNormal "Creating hooks for #{appName}"
 
-      createHook = systemCmd("sudo -u #{@gitUser} /usr/local/rvm/bin/ruby /home/#{@gitUser}/scripts/createHook.rb #{appName}")
+      createHook = @system.execute("sudo -u #{@gitUser} /usr/local/rvm/bin/ruby /home/#{@gitUser}/scripts/createHook.rb #{appName}")
 
       if createHook.success?
         ptConfirm
@@ -286,7 +286,7 @@ class DeploymentActions
     ptNormal "Cloning repository for #{appName}"
 
     # Cloning:
-    cloneGit = systemCmd( "git clone #{@repositoriesFolder}#{appName}.git #{@productionFolder}#{appName}" )
+    cloneGit = @system.execute( "git clone #{@repositoriesFolder}#{appName}.git #{@productionFolder}#{appName}" )
 
     if cloneGit.success?
       ptConfirm
@@ -299,7 +299,7 @@ class DeploymentActions
 
     ptNormal "Changing repository's permissions"
 
-    cloneGit = systemCmd("chmod -R 775 #{@productionFolder}#{appName}")
+    cloneGit = @system.execute("chmod -R 775 #{@productionFolder}#{appName}")
 
     if cloneGit.success?
       ptConfirm
@@ -356,7 +356,7 @@ class DeploymentActions
       unless File.exists?(nginxConfigLink)
         ptConfirm
         ptNormal "Linking"
-        action = systemCmd("ln -s #{nginxConfigFile} #{nginxConfigLink}")
+        action = @system.execute("ln -s #{nginxConfigFile} #{nginxConfigLink}")
         if action.success?
           ptConfirm
           @apps[appName]["enabled"] = true
@@ -380,7 +380,7 @@ class DeploymentActions
 
     if File.exists?(nginxConfigLink)
       ptNormal "Deleting symlink for #{appName}"
-      nginxCmd1 = systemCmd("rm #{nginxConfigLink}")
+      nginxCmd1 = @system.execute("rm #{nginxConfigLink}")
 
       if nginxCmd1.success?
         @apps[appName]["enabled"] = false
@@ -405,7 +405,7 @@ class DeploymentActions
     if File.exists?(nginxConfigFile)
 
       ptNormal "Deleting Nginx configuration for #{appName}"
-      nginxCmd2 = systemCmd("rm #{nginxConfigFile}")
+      nginxCmd2 = @system.execute("rm #{nginxConfigFile}")
 
       if nginxCmd2.success?
         @apps[appName]["available"] = false
@@ -429,7 +429,7 @@ class DeploymentActions
     ptNormal "Saving Thin configuration for #{appName}"
     appPorts = @apps[appName]["ports"]
     appFirst = @apps[appName]["first"]
-    thinCommand = systemCmd("thin config -C /etc/thin/#{appName}.yml -c /var/www/#{appName} --servers #{appPorts} -e production -p #{appFirst}")
+    thinCommand = @system.execute("thin config -C /etc/thin/#{appName}.yml -c /var/www/#{appName} --servers #{appPorts} -e production -p #{appFirst}")
 
     if thinCommand.success?
       ptConfirm
@@ -448,7 +448,7 @@ class DeploymentActions
   def deleteThinConfigFile(appName)
 
     ptNormal "Deleting Thin configuration for #{appName}"
-    thinCmd = systemCmd("rm /etc/thin/#{appName}.yml")
+    thinCmd = @system.execute("rm /etc/thin/#{appName}.yml")
 
     if thinCmd.success?
       ptConfirm
@@ -466,7 +466,7 @@ class DeploymentActions
 
   def startNginx
     ptNormal "Starting Nginx"
-    command = systemCmd( "sudo service nginx start" )
+    command = @system.execute( "sudo service nginx start" )
     if command.success?
       ptConfirm
     else
@@ -477,7 +477,7 @@ class DeploymentActions
 
   def stopNginx
     ptNormal "Stopping Nginx"
-    command = systemCmd( "sudo service nginx stop" )
+    command = @system.execute( "sudo service nginx stop" )
     if command.success?
       ptConfirm
     else
@@ -488,7 +488,7 @@ class DeploymentActions
 
   def startThin(appName)
     ptNormal "Starting thin for #{appName}"
-    command = systemCmd( "thin start -C /etc/thin/#{appName}.yml" )
+    command = @system.execute( "thin start -C /etc/thin/#{appName}.yml" )
     if command.success?
       ptConfirm
     else
@@ -499,7 +499,7 @@ class DeploymentActions
 
   def stopThin(appName)
     ptNormal "Stopping thin for #{appName}"
-    command = systemCmd( "thin stop -C /etc/thin/#{appName}.yml" )
+    command = @system.execute( "thin stop -C /etc/thin/#{appName}.yml" )
     if command.success?
       ptConfirm
     else
@@ -539,7 +539,7 @@ class DeploymentActions
 
     @apps.each {|key, value|
       if value["online"]
-        command = systemCmd("thin stop -C /etc/thin/#{key}.yml")
+        command = @system.execute("thin stop -C /etc/thin/#{key}.yml")
       end
     }
 
@@ -552,7 +552,7 @@ class DeploymentActions
 
     @apps.each {|key, value|
       if value["online"]
-        command = systemCmd( "thin start -C /etc/thin/#{key}.yml" )
+        command = @system.execute( "thin start -C /etc/thin/#{key}.yml" )
       end
     }
 
@@ -564,24 +564,24 @@ class DeploymentActions
   # Database methods
 
   def checkDbUser(dbUser)
-    action = systemCmd("sudo -u postgres psql -c '\\du' | grep #{dbUser}")
+    action = @system.execute("sudo -u postgres psql -c '\\du' | grep #{dbUser}")
     action.success?
   end
 
   def createDbUser(dbUser, dbPassword)
-    action = systemCmd("echo \"CREATE ROLE #{dbUser} WITH LOGIN ENCRYPTED PASSWORD '#{dbPassword}';\" | sudo -u postgres psql")
+    action = @system.execute("echo \"CREATE ROLE #{dbUser} WITH LOGIN ENCRYPTED PASSWORD '#{dbPassword}';\" | sudo -u postgres psql")
     action.success?
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   def checkDb(dbName)
-    action = systemCmd("sudo -u postgres psql -c '\\l' | grep #{dbName}")
+    action = @system.execute("sudo -u postgres psql -c '\\l' | grep #{dbName}")
     action.success?
   end
 
   def createProductionDb(dbUser, dbName)
-    action = systemCmd("sudo -u postgres createdb -O #{dbUser} #{dbName}")
+    action = @system.execute("sudo -u postgres createdb -O #{dbUser} #{dbName}")
     action.success?
   end
 
@@ -906,7 +906,7 @@ class DeploymentActions
     unless skipBundle
 
       ptNormal "Executing 'bundle package'"
-      action = systemCmd("bundle package")
+      action = @system.execute("bundle package")
 
       if action.success?
         ptConfirm
@@ -916,7 +916,7 @@ class DeploymentActions
       end
 
       ptNormal "Executing 'bundle install'"
-      action = systemCmd("bundle install --deployment")
+      action = @system.execute("bundle install --deployment")
 
       if action.success?
         ptConfirm
@@ -936,7 +936,7 @@ class DeploymentActions
       ptNormal "#{migrationsNumber} migrations found."
       ptNormal "Migrating"
 
-      deployStep4 = systemCmd("RAILS_ENV=production rake db:migrate")
+      deployStep4 = @system.execute("RAILS_ENV=production rake db:migrate")
       
       if deployStep4.success?
         ptConfirm
@@ -950,7 +950,7 @@ class DeploymentActions
     unless skipAssets
 
       ptNormal "Precompile assets"
-      deployStep5 = systemCmd("rake assets:precompile")
+      deployStep5 = @system.execute("rake assets:precompile")
 
       if deployStep5.success?
         ptConfirm
@@ -1070,7 +1070,7 @@ class DeploymentActions
 
   def destroy(appName)
     disable appName
-    action = systemCmd( "rm -rf #{@productionFolder}#{appName} && sudo -u git rm -rf #{@repositoriesFolder}#{appName}.git" )
+    action = @system.execute( "rm -rf #{@productionFolder}#{appName} && sudo -u git rm -rf #{@repositoriesFolder}#{appName}.git" )
 
     if action.success?
       @apps.delete(appName)
