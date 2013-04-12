@@ -54,6 +54,8 @@
 require 'erb'
 require 'yaml'
 
+Dir[File.dirname(__FILE__) + '/lib/*.rb'].each {|file| require file }
+
 class DeploymentActions
 
   def initialize
@@ -65,11 +67,6 @@ class DeploymentActions
     @pur = "\033[0;35m"
     @cya = "\033[0;36m"
     @ncl = "\033[0m" #No colour
-
-puts File.dirname(__FILE__) + 'lib/*.rb'
-Dir[File.dirname(__FILE__) + 'lib/*.rb'].each {|file| puts file }
-
-    Dir[File.dirname(__FILE__) + 'lib/*.rb'].each {|file| require file }
 
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Loads information from YML file:
