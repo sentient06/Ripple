@@ -70,7 +70,7 @@ class DeploymentActions
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Loads information from YML file:
 
-    generalDataFile = "./general.yml"
+    generalDataFile = File.expand_path('./general.yml')
 
     if File.exists?(generalDataFile)
       generalData = YAML.load_file(generalDataFile)
