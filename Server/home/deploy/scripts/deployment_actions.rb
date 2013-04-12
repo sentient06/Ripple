@@ -53,7 +53,7 @@
 
 require 'erb'
 require 'yaml'
-# Dir['lib/*.rb'].each {|file| require file }
+Dir['./lib/*.rb'].each {|file| require file }
 
 class DeploymentActions
 
@@ -88,6 +88,8 @@ class DeploymentActions
     @databaseYml          = generalData['databaseYml']
     @nginxAvailableFolder = generalData['nginxAvailableFolder']
     @nginxEnabledFolder   = generalData['nginxEnabledFolder']
+
+    @system = System.new
 
     @dashes = '----------------------'
 
@@ -135,13 +137,7 @@ class DeploymentActions
   # Returns a process object.
   def systemCmd(commandStr)
 
-    # print "Executing '#{commandStr}'..."
-    output = `#{commandStr} 2>&1`
-    # $? -> process, i.e
-    # #<Process::Status: pid 1612 exit 0>
-    # #<Process::Status: pid 1620 exit 2>
-    result = $?
-    # System.new(commandStr)
+    @system.execute(commandStr)
 
   end
 
