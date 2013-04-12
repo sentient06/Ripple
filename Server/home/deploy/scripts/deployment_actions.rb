@@ -53,6 +53,7 @@
 
 require 'erb'
 require 'yaml'
+# Dir['../lib/*.rb'].each {|file| require file }
 
 class DeploymentActions
 
@@ -66,19 +67,40 @@ class DeploymentActions
     @cya = "\033[0;36m"
     @ncl = "\033[0m" #No colour
 
-    @deployerUser = "deploy"
-    @gitUser      = "git"
+    # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+    # Load information:
 
-    @dataFile             = "/home/#{@deployerUser}/data/apps"
-    @repositoriesFolder   = "/home/#{@gitUser}/repositories/"
-    @templatesFolder      = "/home/#{@deployerUser}/templates/"
-    @productionFolder     = "/var/www/"
-    @databaseYml          = "/config/database.yml"
-    @nginxAvailableFolder = "/etc/nginx/sites-available/"
-    @nginxEnabledFolder   = "/etc/nginx/sites-enabled/"
+    generalDataFile = "./general.yml"
+
+    if File.exists?(generalDataFile)
+      generalData = YAML.load_file(generalDataFile)
+    else
+      ptError "Unable to read general data file."
+      exit
+    end
+
+    @deployerUser         = generalData['deployerUser']
+    @gitUser              = generalData['gitUser']
+    @dataFile             = generalData['dataFile']
+    @repositoriesFolder   = generalData['repositoriesFolder']
+    @templatesFolder      = generalData['templatesFolder']
+    @productionFolder     = generalData['productionFolder']
+    @databaseYml          = generalData['databaseYml']
+    @nginxAvailableFolder = generalData['nginxAvailableFolder']
+    @nginxEnabledFolder   = generalData['nginxEnabledFolder']
+
+    # @deployerUser = "deploy"
+    # @gitUser      = "git"
+
+    # @dataFile             = "/home/#{@deployerUser}/data/apps"
+    # @repositoriesFolder   = "/home/#{@gitUser}/repositories/"
+    # @templatesFolder      = "/home/#{@deployerUser}/templates/"
+    # @productionFolder     = "/var/www/"
+    # @databaseYml          = "/config/database.yml"
+    # @nginxAvailableFolder = "/etc/nginx/sites-available/"
+    # @nginxEnabledFolder   = "/etc/nginx/sites-enabled/"
 
     @dashes = '----------------------'
-    @stop   = false
 
     loadData
 
@@ -140,7 +162,6 @@ class DeploymentActions
 
     unless File.exists?(@dataFile)
       @apps = Hash.new
-      # print "\r"
       ptGreen "List of apps unavailable."
     else
       @apps = Marshal.load File.read(@dataFile)
@@ -563,16 +584,19 @@ class DeploymentActions
 
   def createDbUser(dbUser, dbPassword)
     action = systemCmd("echo \"CREATE ROLE #{dbUser} WITH LOGIN ENCRYPTED PASSWORD '#{dbPassword}';\" | sudo -u postgres psql")
+    action.success?
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   def checkDb(dbName)
-    dbExists = systemCmd("sudo -u postgres psql -c '\\l' | grep #{dbName}")
+    action = systemCmd("sudo -u postgres psql -c '\\l' | grep #{dbName}")
+    action.success?
   end
 
   def createProductionDb(dbUser, dbName)
     action = systemCmd("sudo -u postgres createdb -O #{dbUser} #{dbName}")
+    action.success?
   end
 
   #---------------------------------------------------------------------------
@@ -640,12 +664,12 @@ class DeploymentActions
 
     if appName.nil?
       ptError "Define a name to create this application"
-      return
+      exit
     end
 
     if appURL.nil?
       ptError "Define an URL to create this application"
-      return
+      exit
     end
 
     if appPorts.nil?
@@ -654,7 +678,7 @@ class DeploymentActions
 
     unless @apps[appName].nil?
       ptError "There is already an app with this name"
-      return
+      exit
     end
 
     dashes = "-----------------------"
@@ -684,17 +708,9 @@ class DeploymentActions
     resetApplicationData     # set 'first'
     createRepository appName # set 'repository'
 
-    if @stop == true
-      return
-    end
-
     # Clone repository for further use:
 
     cloneRepository appName
-
-    if @stop == true
-      return
-    end
 
     # Save server configurations:
 
@@ -851,7 +867,7 @@ class DeploymentActions
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Deploy application
   #
-  def deploy(appName)
+  def deploy(appName, skipBundle=false, skipAssets=false)
 
     ptGreen "[Checking data]"
 
@@ -901,24 +917,28 @@ class DeploymentActions
     ptGreen "[Deploying]"
     Dir.chdir "#{@productionFolder}#{appName}"
 
-    ptNormal "Executing 'bundle package'"
-    deployStep2 = systemCmd("bundle package")
+    unless skipBundle
 
-    if deployStep2.success?
-      ptConfirm
-    else
-      ptError "Could not bundle package"
-      exit
-    end
+      ptNormal "Executing 'bundle package'"
+      action = systemCmd("bundle package")
 
-    ptNormal "Executing 'bundle install'"
-    deployStep3 = systemCmd("bundle install --deployment")
+      if action.success?
+        ptConfirm
+      else
+        ptError "Could not bundle package"
+        exit
+      end
 
-    if deployStep3.success?
-      ptConfirm
-    else
-      ptError "Could not bundle install"
-      exit
+      ptNormal "Executing 'bundle install'"
+      action = systemCmd("bundle install --deployment")
+
+      if action.success?
+        ptConfirm
+      else
+        ptError "Could not bundle install"
+        exit
+      end
+
     end
 
     # Check for migrations!
@@ -941,14 +961,18 @@ class DeploymentActions
 
     end
 
-    ptNormal "Precompile assets"
-    deployStep5 = systemCmd("rake assets:precompile")
+    unless skipAssets
 
-    if deployStep5.success?
-      ptConfirm
-    else
-      ptError "Could not precompile assets"
-      exit
+      ptNormal "Precompile assets"
+      deployStep5 = systemCmd("rake assets:precompile")
+
+      if deployStep5.success?
+        ptConfirm
+      else
+        ptError "Could not precompile assets"
+        exit
+      end
+
     end
 
     # If all is fine, start thin, restart nginx.
