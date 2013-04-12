@@ -122,7 +122,7 @@ class DeploymentActions
   end
 
   def ptConfirm
-    @put.confirm(msg)
+    @put.confirm
   end
 
   def ptGreen(msg)
