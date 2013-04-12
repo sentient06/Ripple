@@ -53,7 +53,7 @@
 
 require 'erb'
 require 'yaml'
-# Dir['../lib/*.rb'].each {|file| require file }
+Dir['../lib/*.rb'].each {|file| require file }
 
 class DeploymentActions
 
@@ -68,7 +68,7 @@ class DeploymentActions
     @ncl = "\033[0m" #No colour
 
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-    # Load information:
+    # Loads information from YML file:
 
     generalDataFile = "./general.yml"
 
@@ -88,17 +88,6 @@ class DeploymentActions
     @databaseYml          = generalData['databaseYml']
     @nginxAvailableFolder = generalData['nginxAvailableFolder']
     @nginxEnabledFolder   = generalData['nginxEnabledFolder']
-
-    # @deployerUser = "deploy"
-    # @gitUser      = "git"
-
-    # @dataFile             = "/home/#{@deployerUser}/data/apps"
-    # @repositoriesFolder   = "/home/#{@gitUser}/repositories/"
-    # @templatesFolder      = "/home/#{@deployerUser}/templates/"
-    # @productionFolder     = "/var/www/"
-    # @databaseYml          = "/config/database.yml"
-    # @nginxAvailableFolder = "/etc/nginx/sites-available/"
-    # @nginxEnabledFolder   = "/etc/nginx/sites-enabled/"
 
     @dashes = '----------------------'
 
@@ -146,12 +135,13 @@ class DeploymentActions
   # Returns a process object.
   def systemCmd(commandStr)
 
-    # print "Executing '#{commandStr}'..."
-    output = `#{commandStr} 2>&1`
-    # $? -> process, i.e
-    # #<Process::Status: pid 1612 exit 0>
-    # #<Process::Status: pid 1620 exit 2>
-    result = $?
+    # # print "Executing '#{commandStr}'..."
+    # output = `#{commandStr} 2>&1`
+    # # $? -> process, i.e
+    # # #<Process::Status: pid 1612 exit 0>
+    # # #<Process::Status: pid 1620 exit 2>
+    # result = $?
+    System.new(commandStr)
 
   end
 
