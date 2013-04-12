@@ -90,7 +90,10 @@ class DeploymentActions
     @nginxAvailableFolder = generalData['nginxAvailableFolder']
     @nginxEnabledFolder   = generalData['nginxEnabledFolder']
 
+    # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
     @system = System.new
+    @put    = Put.new
 
     @dashes = '----------------------'
 
@@ -111,25 +114,23 @@ class DeploymentActions
   # Print methods
 
   def ptStatic(msg)
-    puts "\n#{@cya}#{msg}#{@ncl}\n"
+    @put.static(msg)
   end
 
   def ptNormal(msg)
-    print "#{@yel} ->  #{msg}...#{@ncl}"
-    print "\r"
-    @lastMsg = msg
+    @put.normal(msg)
   end
 
   def ptConfirm
-    puts "#{@gre}[ok] #{@lastMsg}.  #{@ncl}"
+    @put.confirm(msg)
   end
 
   def ptGreen(msg)
-    puts "\n#{@gre}#{msg}#{@ncl}\n"
+    @put.green(msg)
   end
 
   def ptError(msg)
-    puts "\n#{@red}[Error] #{msg}!#{@ncl}\n"
+    @put.error(msg)
   end
 
   #-------------------------------------------------------------------------------
