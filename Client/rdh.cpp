@@ -538,6 +538,18 @@ int main (int argc, const char * argv[]) {
 
         snprintf(shellCmd, 512, "status %s", appName.c_str());
 
+    } else if ( command == "destroy" ){
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // Destroy
+        // this destroy app
+
+        if ( appName.empty() ) {
+            errorAppName();
+            return 1;
+        }
+
+        snprintf(shellCmd, 512, "destroy %s", appName.c_str());
+
     } else if ( command == "create" ){
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         // Create
