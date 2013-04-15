@@ -94,6 +94,7 @@ class DeploymentActions
 
     @system = System.new
     @put    = Put.new
+    @nginx  = Nginx.new
 
     @dashes = '----------------------'
 
@@ -434,25 +435,27 @@ class DeploymentActions
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   def startNginx
-    @put.normal "Starting Nginx"
-    command = @system.execute( "sudo service nginx start" )
-    if command.success?
-      @put.confirm
-    else
-      @put.error "Could not start Nginx"
-      exit
-    end
+    @nginx.start
+    # @put.normal "Starting Nginx"
+    # command = @system.execute( "sudo service nginx start" )
+    # if command.success?
+    #   @put.confirm
+    # else
+    #   @put.error "Could not start Nginx"
+    #   exit
+    # end
   end
 
   def stopNginx
-    @put.normal "Stopping Nginx"
-    command = @system.execute( "sudo service nginx stop" )
-    if command.success?
-      @put.confirm
-    else
-      @put.error "Could not stop Nginx"
-      exit
-    end
+    @nginx.stop
+    # @put.normal "Stopping Nginx"
+    # command = @system.execute( "sudo service nginx stop" )
+    # if command.success?
+    #   @put.confirm
+    # else
+    #   @put.error "Could not stop Nginx"
+    #   exit
+    # end
   end
 
   def startThin(appName)
