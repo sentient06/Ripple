@@ -1,4 +1,4 @@
-require 'put.rb'
+# require 'put.rb'
 
 class Nginx
   
