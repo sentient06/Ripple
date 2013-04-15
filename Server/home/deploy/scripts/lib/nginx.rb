@@ -4,6 +4,7 @@ class Nginx
   
   def initialize
     @put = Put.new
+    @system = System.new
   end
 
   def start
