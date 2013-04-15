@@ -76,7 +76,7 @@ class DeploymentActions
     if File.exists?(generalDataFile)
       generalData = YAML.load_file(generalDataFile)
     else
-      ptError "Unable to read general data file."
+      @put.error "Unable to read general data file."
       exit
     end
 
@@ -113,25 +113,25 @@ class DeploymentActions
   #-------------------------------------------------------------------------------
   # Print methods
 
-  def ptStatic(msg)
-    @put.static(msg)
-  end
+  # def ptStatic(msg)
+  #   @put.static(msg)
+  # end
 
-  def ptNormal(msg)
-    @put.normal(msg)
-  end
+  # def ptNormal(msg)
+  #   @put.normal(msg)
+  # end
 
-  def ptConfirm
-    @put.confirm
-  end
+  # def ptConfirm
+  #   @put.confirm
+  # end
 
-  def ptGreen(msg)
-    @put.green(msg)
-  end
+  # def ptGreen(msg)
+  #   @put.green(msg)
+  # end
 
-  def ptError(msg)
-    @put.error(msg)
-  end
+  # def ptError(msg)
+  #   @put.error(msg)
+  # end
 
   #-------------------------------------------------------------------------------
   # System actions
@@ -150,7 +150,7 @@ class DeploymentActions
 
     unless File.exists?(@dataFile)
       @apps = Hash.new
-      ptGreen "List of apps unavailable."
+      @put.green "List of apps unavailable."
     else
       @apps = Marshal.load File.read(@dataFile)
     end
@@ -163,7 +163,7 @@ class DeploymentActions
     serialisedApps = Marshal.dump(@apps)
     savedFile = File.open(@dataFile, 'w') {|f| f.write(serialisedApps) }
     if savedFile.nil?
-      ptError("Something went wrong saving the data file")
+      @put.error("Something went wrong saving the data file")
       return 1
     end
   end
@@ -174,7 +174,7 @@ class DeploymentActions
 
     port = 3000
 
-    ptNormal "Setting ports"
+    @put.normal "Setting ports"
     thinConfigChange = Array.new
     nginxConfigChange = Array.new
 
@@ -200,7 +200,7 @@ class DeploymentActions
       end
     }
 
-    ptConfirm
+    @put.confirm
     saveData
 
     return
@@ -231,47 +231,47 @@ class DeploymentActions
     repositoryFolder = "#{@repositoriesFolder}#{appName}.git"
 
     if File.exists?(repositoryFolder)
-      ptError "Repository folder already exists"
+      @put.error "Repository folder already exists"
       return
     end
 
     # Creates folder:
 
-    ptNormal "Creating repository folder for #{appName}"
+    @put.normal "Creating repository folder for #{appName}"
 
     createFolder = @system.execute("sudo -u #{@gitUser} mkdir #{repositoryFolder}")
 
     if createFolder.success?
-      ptConfirm
+      @put.confirm
     else
-      ptError "Could not create git folder"
+      @put.error "Could not create git folder"
       exit     
     end
 
     # Creates git bare respository
 
-    ptNormal "Creating bare repository for #{appName}"
+    @put.normal "Creating bare repository for #{appName}"
 
     createGit = @system.execute("sudo -u #{@gitUser} git init #{repositoryFolder}/ --bare")
 
     if createGit.success?
-      ptConfirm
+      @put.confirm
     else
-      ptError "Could not create git repository"
+      @put.error "Could not create git repository"
       exit
     end
 
     # Saves the post-update hook:
     if createHook==true
-      ptNormal "Creating hooks for #{appName}"
+      @put.normal "Creating hooks for #{appName}"
 
       createHook = @system.execute("sudo -u #{@gitUser} /usr/local/rvm/bin/ruby /home/#{@gitUser}/scripts/createHook.rb #{appName}")
 
       if createHook.success?
-        ptConfirm
+        @put.confirm
       else
         print "\n"
-        ptError "Could not create hook"
+        @put.error "Could not create hook"
         exit
       end
     end
@@ -285,28 +285,28 @@ class DeploymentActions
 
   def cloneRepository(appName)
 
-    ptNormal "Cloning repository for #{appName}"
+    @put.normal "Cloning repository for #{appName}"
 
     # Cloning:
     cloneGit = @system.execute( "git clone #{@repositoriesFolder}#{appName}.git #{@productionFolder}#{appName}" )
 
     if cloneGit.success?
-      ptConfirm
+      @put.confirm
     else
-      ptError "Repository could not be cloned"
+      @put.error "Repository could not be cloned"
       exit
     end
 
     # Permissions to 775:
 
-    ptNormal "Changing repository's permissions"
+    @put.normal "Changing repository's permissions"
 
     cloneGit = @system.execute("chmod -R 775 #{@productionFolder}#{appName}")
 
     if cloneGit.success?
-      ptConfirm
+      @put.confirm
     else
-      ptError "Could not change repository's permissions"
+      @put.error "Could not change repository's permissions"
       exit
     end
 
@@ -329,7 +329,7 @@ class DeploymentActions
 
     # Saving file:
 
-    ptNormal "Saving Nginx configuration file"
+    @put.normal "Saving Nginx configuration file"
 
     file = "#{@templatesFolder}nginx.erb"
     nginxTemplate = ERB.new(File.read(file))
@@ -337,9 +337,9 @@ class DeploymentActions
     nginxCommand = File.open("#{@nginxAvailableFolder}#{appName}.conf", 'w') {|f| f.write(nginxConfig) }
 
     unless nginxCommand.nil?
-      ptConfirm
+      @put.confirm
     else
-      ptError "Could not save Nginx configuration"
+      @put.error "Could not save Nginx configuration"
       return
     end
 
@@ -352,23 +352,23 @@ class DeploymentActions
 
     nginxConfigFile = "#{@nginxAvailableFolder}#{appName}.conf"
     nginxConfigLink = "#{@nginxEnabledFolder}#{appName}.conf"
-    ptNormal "Checking Nginx config file"
+    @put.normal "Checking Nginx config file"
 
     if File.exists?(nginxConfigFile)
       unless File.exists?(nginxConfigLink)
-        ptConfirm
-        ptNormal "Linking"
+        @put.confirm
+        @put.normal "Linking"
         action = @system.execute("ln -s #{nginxConfigFile} #{nginxConfigLink}")
         if action.success?
-          ptConfirm
+          @put.confirm
           @apps[appName]["enabled"] = true
           saveData
         else
-          ptError "Could not symlink Nginx configuration file"
+          @put.error "Could not symlink Nginx configuration file"
         end
       end
     else
-      ptError "Config file non-existent"
+      @put.error "Config file non-existent"
     end
 
   end
@@ -381,19 +381,19 @@ class DeploymentActions
     nginxConfigLink = "#{@nginxEnabledFolder}#{appName}.conf"
 
     if File.exists?(nginxConfigLink)
-      ptNormal "Deleting symlink for #{appName}"
+      @put.normal "Deleting symlink for #{appName}"
       nginxCmd1 = @system.execute("rm #{nginxConfigLink}")
 
       if nginxCmd1.success?
         @apps[appName]["enabled"] = false
-        ptConfirm
+        @put.confirm
         saveData
       else
-        ptError "Could not delete configuration symlink for #{appName}"
+        @put.error "Could not delete configuration symlink for #{appName}"
       end
 
     else
-      ptGreen "No symlink found."
+      @put.green "No symlink found."
     end
 
   end
@@ -406,20 +406,20 @@ class DeploymentActions
 
     if File.exists?(nginxConfigFile)
 
-      ptNormal "Deleting Nginx configuration for #{appName}"
+      @put.normal "Deleting Nginx configuration for #{appName}"
       nginxCmd2 = @system.execute("rm #{nginxConfigFile}")
 
       if nginxCmd2.success?
         @apps[appName]["available"] = false
         saveData
-        ptConfirm
+        @put.confirm
       else
-        ptError "Could not delete configuration file for #{appName}"
+        @put.error "Could not delete configuration file for #{appName}"
         return
       end
 
     else
-      ptGreen "No config file found."
+      @put.green "No config file found."
     end
 
   end
@@ -428,15 +428,15 @@ class DeploymentActions
   
   def saveThinConfigFile(appName)
 
-    ptNormal "Saving Thin configuration for #{appName}"
+    @put.normal "Saving Thin configuration for #{appName}"
     appPorts = @apps[appName]["ports"]
     appFirst = @apps[appName]["first"]
     thinCommand = @system.execute("thin config -C /etc/thin/#{appName}.yml -c /var/www/#{appName} --servers #{appPorts} -e production -p #{appFirst}")
 
     if thinCommand.success?
-      ptConfirm
+      @put.confirm
     else
-      ptError "Could not save Thin configuration for #{appName}"
+      @put.error "Could not save Thin configuration for #{appName}"
       return
     end
 
@@ -449,13 +449,13 @@ class DeploymentActions
 
   def deleteThinConfigFile(appName)
 
-    ptNormal "Deleting Thin configuration for #{appName}"
+    @put.normal "Deleting Thin configuration for #{appName}"
     thinCmd = @system.execute("rm /etc/thin/#{appName}.yml")
 
     if thinCmd.success?
-      ptConfirm
+      @put.confirm
     else
-      ptError "Could not delete Thin configuration for #{appName}"
+      @put.error "Could not delete Thin configuration for #{appName}"
       return
     end
 
@@ -467,45 +467,45 @@ class DeploymentActions
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   def startNginx
-    ptNormal "Starting Nginx"
+    @put.normal "Starting Nginx"
     command = @system.execute( "sudo service nginx start" )
     if command.success?
-      ptConfirm
+      @put.confirm
     else
-      ptError "Could not start Nginx"
+      @put.error "Could not start Nginx"
       exit
     end
   end
 
   def stopNginx
-    ptNormal "Stopping Nginx"
+    @put.normal "Stopping Nginx"
     command = @system.execute( "sudo service nginx stop" )
     if command.success?
-      ptConfirm
+      @put.confirm
     else
-      ptError "Could not stop Nginx"
+      @put.error "Could not stop Nginx"
       exit
     end
   end
 
   def startThin(appName)
-    ptNormal "Starting thin for #{appName}"
+    @put.normal "Starting thin for #{appName}"
     command = @system.execute( "thin start -C /etc/thin/#{appName}.yml" )
     if command.success?
-      ptConfirm
+      @put.confirm
     else
-      ptError "Could not start Thin"
+      @put.error "Could not start Thin"
       exit
     end
   end
 
   def stopThin(appName)
-    ptNormal "Stopping thin for #{appName}"
+    @put.normal "Stopping thin for #{appName}"
     command = @system.execute( "thin stop -C /etc/thin/#{appName}.yml" )
     if command.success?
-      ptConfirm
+      @put.confirm
     else
-      ptError "Could not stop Thin"
+      @put.error "Could not stop Thin"
       exit
     end
   end
@@ -527,7 +527,7 @@ class DeploymentActions
   end
 
   def resetServers
-    ptNormal "Restarting servers"
+    @put.normal "Restarting servers"
     stopServers
     startServers
   end
@@ -535,7 +535,7 @@ class DeploymentActions
   def stopServers
 
     stopNginx
-    ptNormal "Stopping Thin"
+    @put.normal "Stopping Thin"
 
     # Iterates through all apps to stop server instances:
 
@@ -549,8 +549,8 @@ class DeploymentActions
 
   def startServers
 
-    ptNormal "Starting servers"
-    ptNormal "Starting Thin"
+    @put.normal "Starting servers"
+    @put.normal "Starting Thin"
 
     @apps.each {|key, value|
       if value["online"]
@@ -623,7 +623,7 @@ class DeploymentActions
   def list
 
     if @apps.count < 1
-      ptGreen "No applications found."
+      @put.green "No applications found."
       exit
     end
 
@@ -651,12 +651,12 @@ class DeploymentActions
     # Check for errors:
 
     if appName.nil?
-      ptError "Define a name to create this application"
+      @put.error "Define a name to create this application"
       exit
     end
 
     if appURL.nil?
-      ptError "Define an URL to create this application"
+      @put.error "Define an URL to create this application"
       exit
     end
 
@@ -665,7 +665,7 @@ class DeploymentActions
     end
 
     unless @apps[appName].nil?
-      ptError "There is already an app with this name"
+      @put.error "There is already an app with this name"
       exit
     end
 
@@ -751,10 +751,10 @@ class DeploymentActions
 
     dbConfigFile = "#{@productionFolder}#{appName}#{@databaseYml}"
 
-    ptNormal "Checking DB file: #{dbConfigFile}"
+    @put.normal "Checking DB file: #{dbConfigFile}"
 
     unless File.exists?(dbConfigFile)
-      ptError "Database file does not exist"
+      @put.error "Database file does not exist"
       exit
     end
 
@@ -764,11 +764,11 @@ class DeploymentActions
     # Load information:
 
     productionDB = dbDetails['production']
-    # ptStatic "Production DB details:"
+    # @put.static "Production DB details:"
     # puts productionDB
 
     if productionDB.nil?
-      ptGreen "Nothing to do with the database"
+      @put.green "Nothing to do with the database"
       return
     end
 
@@ -777,7 +777,7 @@ class DeploymentActions
     # If this is a SQLite 3, accept it:
 
     if dbAdapter == "sqlite3"
-      ptGreen "Sqlite3 detected!"
+      @put.green "Sqlite3 detected!"
       @apps[appName]["db"] = true
       saveData
       return
@@ -790,57 +790,57 @@ class DeploymentActions
     dbPass = productionDB['password']
 
     if dbPass.nil?
-      ptError "No password, ignoring database"
+      @put.error "No password, ignoring database"
       exit
     end
 
-    # ptNormal "Name: #{dbName}"
-    # ptNormal "User: #{dbUser}"
-    # ptNormal "Pass: #{dbPass}"
+    # @put.normal "Name: #{dbName}"
+    # @put.normal "User: #{dbUser}"
+    # @put.normal "Pass: #{dbPass}"
 
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Checking user:
 
-    ptNormal "Checking DB user existence"
+    @put.normal "Checking DB user existence"
     userExistent = checkDbUser(dbUser)
-    ptConfirm
+    @put.confirm
 
     if userExistent
-      ptGreen "User registered."
+      @put.green "User registered."
     else
-      ptGreen "No user defined."
-      ptNormal "Creating new user '#{dbUser}'"
+      @put.green "No user defined."
+      @put.normal "Creating new user '#{dbUser}'"
 
       newUser = createDbUser(dbUser, dbPass)
 
       unless newUser
-        ptError "Unable to create DB user"
+        @put.error "Unable to create DB user"
         exit
       else
         userExistent = true
-        ptConfirm
+        @put.confirm
       end
     end
 
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Checking database:
 
-    ptNormal "Checking database existence"
+    @put.normal "Checking database existence"
     dbExistent = checkDb(dbName)
 
     if dbExistent
-      ptConfirm
+      @put.confirm
     else
-      ptGreen "No database defined."
-      ptNormal "Creating new database"
+      @put.green "No database defined."
+      @put.normal "Creating new database"
 
       newDB = createProductionDb(dbUser, dbName)
 
       if newDB
         dbExistent = true
-        ptConfirm
+        @put.confirm
       else
-        ptError "Unable to create database"
+        @put.error "Unable to create database"
         exit
       end
     end
@@ -857,22 +857,22 @@ class DeploymentActions
   #
   def deploy(appName, skipBundle=false, skipAssets=false)
 
-    ptGreen "[Checking data]"
+    @put.green "[Checking data]"
 
     if @apps[appName]["repository"]
       if @apps[appName]["thin"]
         if @apps[appName]["available"]
-          ptGreen "All seems to be fine, yay!"
+          @put.green "All seems to be fine, yay!"
         else
-          ptError "Nginx configuration not saved"
+          @put.error "Nginx configuration not saved"
           return
         end
       else
-        ptError "Thin configuration not saved"
+        @put.error "Thin configuration not saved"
         return
       end
     else
-      ptError "Repository non-existent"
+      @put.error "Repository non-existent"
       return
     end
 
@@ -888,42 +888,42 @@ class DeploymentActions
 
     # Deploy database
 
-    ptNormal "Checking database"
+    @put.normal "Checking database"
 
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Check data:
 
     if @apps[appName]["db"] == false
-      ptGreen "No database on record."
+      @put.green "No database on record."
       deployDatabase appName
     else
-      ptConfirm
+      @put.confirm
     end
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    ptGreen "[Deploying]"
+    @put.green "[Deploying]"
     Dir.chdir "#{@productionFolder}#{appName}"
 
     unless skipBundle
 
-      ptNormal "Executing 'bundle package'"
+      @put.normal "Executing 'bundle package'"
       action = @system.execute("bundle package")
 
       if action.success?
-        ptConfirm
+        @put.confirm
       else
-        ptError "Could not bundle package"
+        @put.error "Could not bundle package"
         exit
       end
 
-      ptNormal "Executing 'bundle install'"
+      @put.normal "Executing 'bundle install'"
       action = @system.execute("bundle install --deployment")
 
       if action.success?
-        ptConfirm
+        @put.confirm
       else
-        ptError "Could not bundle install"
+        @put.error "Could not bundle install"
         exit
       end
 
@@ -935,15 +935,15 @@ class DeploymentActions
     migrationsNumber = Dir.glob(File.join(migrationsFolder, '**', '*.rb')).count
 
     if migrationsNumber > 0
-      ptNormal "#{migrationsNumber} migrations found."
-      ptNormal "Migrating"
+      @put.normal "#{migrationsNumber} migrations found."
+      @put.normal "Migrating"
 
       deployStep4 = @system.execute("RAILS_ENV=production rake db:migrate")
       
       if deployStep4.success?
-        ptConfirm
+        @put.confirm
       else
-        ptError "Could not migrate database"
+        @put.error "Could not migrate database"
         exit
       end
 
@@ -951,13 +951,13 @@ class DeploymentActions
 
     unless skipAssets
 
-      ptNormal "Precompile assets"
+      @put.normal "Precompile assets"
       deployStep5 = @system.execute("rake assets:precompile")
 
       if deployStep5.success?
-        ptConfirm
+        @put.confirm
       else
-        ptError "Could not precompile assets"
+        @put.error "Could not precompile assets"
         exit
       end
 
@@ -1013,7 +1013,7 @@ class DeploymentActions
     puts "newValues = #{newValues}"
 
     unless @apps.has_key?(appName)
-      ptError "There is no application with the name '#{appName}'"
+      @put.error "There is no application with the name '#{appName}'"
       exit
     end
 
@@ -1025,12 +1025,12 @@ class DeploymentActions
     end
 
     # puts newHash
-    ptNormal "Setting new values"
+    @put.normal "Setting new values"
 
     resetPorts = false
 
     newHash.each {|key, value|
-      # ptGreen "#{key} = #{value}"
+      # @put.green "#{key} = #{value}"
       @apps[appName][key] = value
       if key == "ports"
         resetPorts = true
@@ -1040,11 +1040,11 @@ class DeploymentActions
     # @apps[appName][key] = value
     saveData
 
-    ptConfirm
+    @put.confirm
 
     if resetPorts
       resetApplicationData
-      ptNormal "Warning: double-check the applications' ports and thin files."
+      @put.normal "Warning: double-check the applications' ports and thin files."
     end
     # resetAll
 
@@ -1077,9 +1077,9 @@ class DeploymentActions
     if action.success?
       @apps.delete(appName)
       saveData
-      ptGreen "#{appName.capitalize} destroyed!"
+      @put.green "#{appName.capitalize} destroyed!"
     else
-      ptError "Problem trying to destroy #{appName}."
+      @put.error "Problem trying to destroy #{appName}."
     end
   end
 
