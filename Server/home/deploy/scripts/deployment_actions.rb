@@ -134,16 +134,6 @@ class DeploymentActions
   end
 
   #-------------------------------------------------------------------------------
-  # System actions
-
-  # Returns a process object.
-  # def systemCmd(commandStr)
-
-  #   @system.execute(commandStr)
-
-  # end
-
-  #-------------------------------------------------------------------------------
   # File methods
 
   def loadData
@@ -164,7 +154,7 @@ class DeploymentActions
     savedFile = File.open(@dataFile, 'w') {|f| f.write(serialisedApps) }
     if savedFile.nil?
       ptError("Something went wrong saving the data file")
-      return 1
+      exit
     end
   end
 
