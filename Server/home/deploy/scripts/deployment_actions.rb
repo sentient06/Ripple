@@ -95,6 +95,7 @@ class DeploymentActions
     @system = System.new
     @put    = Put.new
     @nginx  = Nginx.new
+    @thin   = Thin.new
 
     @dashes = '----------------------'
 
@@ -436,27 +437,13 @@ class DeploymentActions
 
   def startNginx
     @nginx.start
-    # @put.normal "Starting Nginx"
-    # command = @system.execute( "sudo service nginx start" )
-    # if command.success?
-    #   @put.confirm
-    # else
-    #   @put.error "Could not start Nginx"
-    #   exit
-    # end
   end
 
   def stopNginx
     @nginx.stop
-    # @put.normal "Stopping Nginx"
-    # command = @system.execute( "sudo service nginx stop" )
-    # if command.success?
-    #   @put.confirm
-    # else
-    #   @put.error "Could not stop Nginx"
-    #   exit
-    # end
   end
+
+  # Relocating to Thin class
 
   def startThin(appName)
     @put.normal "Starting thin for #{appName}"
@@ -467,7 +454,10 @@ class DeploymentActions
       @put.error "Could not start Thin"
       exit
     end
+    # @thin.start(appName)
   end
+
+  # Relocating to Thin class
 
   def stopThin(appName)
     @put.normal "Stopping thin for #{appName}"
@@ -478,20 +468,21 @@ class DeploymentActions
       @put.error "Could not stop Thin"
       exit
     end
+    # @thin.stop(appName)
   end
 
   def startApp(appName)
-    stopNginx
+    @nginx.stop
     startThin(appName)
-    startNginx
+    @nginx.start
     @apps[appName]["online"] = true
     saveData
   end
 
   def stopApp(appName)
-    stopNginx
+    @nginx.stop
     stopThin(appName)
-    startNginx
+    @nginx.start
     @apps[appName]["online"] = false
     saveData
   end
@@ -504,7 +495,7 @@ class DeploymentActions
 
   def stopServers
 
-    stopNginx
+    @nginx.stop
     @put.normal "Stopping Thin"
 
     # Iterates through all apps to stop server instances:
@@ -528,7 +519,7 @@ class DeploymentActions
       end
     }
 
-    startNginx
+    @nginx.start
 
   end
 
@@ -965,12 +956,12 @@ class DeploymentActions
   #
   def resetAll
 
-    stopNginx
+    @nginx.stop
     resetApplicationData
     @apps.each {|key, value|
         reset(key)
     }
-    startNginx
+    @nginx.start
 
   end
 
@@ -1024,11 +1015,11 @@ class DeploymentActions
   # Deletes configuration files and stops the application
   #
   def disable(appName)
-    stopNginx
+    @nginx.stop
     stopThin(appName)
     deleteNginxConfigFile(appName)
     deleteThinConfigFile(appName)
-    startNginx
+    @nginx.start
     @apps[appName]["online"] = false
     saveData
   end

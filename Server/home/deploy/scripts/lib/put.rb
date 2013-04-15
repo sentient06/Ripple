@@ -1,3 +1,7 @@
+# Ruby Deployment for Humans
+# Copyright (c) 2012 Giancarlo Mariot. All rights reserved.
+#------------------------------------------------------------------------------
+
 class Put
 
   def initialize

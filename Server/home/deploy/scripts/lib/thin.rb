@@ -2,31 +2,31 @@
 # Copyright (c) 2012 Giancarlo Mariot. All rights reserved.
 #------------------------------------------------------------------------------
 
-class Nginx
+class Thin
   
   def initialize
     @put    = Put.new
     @system = System.new
   end
 
-  def start
-    @put.normal "Starting Nginx"
-    command = @system.execute( "sudo service nginx start" )
+  def start(appName)
+    @put.normal "Starting thin for #{appName}"
+    command = @system.execute( "thin start -C /etc/thin/#{appName}.yml" )
     if command.success?
       @put.confirm
     else
-      @put.error "Could not start Nginx"
+      @put.error "Could not start Thin"
       exit
     end
   end
 
-  def stop
-    @put.normal "Stopping Nginx"
-    command = @system.execute( "sudo service nginx stop" )
+  def stop(appName)
+    @put.normal "Stopping thin for #{appName}"
+    command = @system.execute( "thin stop -C /etc/thin/#{appName}.yml" )
     if command.success?
       @put.confirm
     else
-      @put.error "Could not stop Nginx"
+      @put.error "Could not stop Thin"
       exit
     end
   end
