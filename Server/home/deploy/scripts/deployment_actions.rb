@@ -111,39 +111,6 @@ class DeploymentActions
   attr_reader :dataFile, :repositoriesFolder, :templatesFolder, :productionFolder, :databaseYml, :lastMsg, :apps
 
   #-------------------------------------------------------------------------------
-  # Print methods
-
-  # def ptStatic(msg)
-  #   @put.static(msg)
-  # end
-
-  # def ptNormal(msg)
-  #   @put.normal(msg)
-  # end
-
-  # def ptConfirm
-  #   @put.confirm
-  # end
-
-  # def ptGreen(msg)
-  #   @put.green(msg)
-  # end
-
-  # def ptError(msg)
-  #   @put.error(msg)
-  # end
-
-  #-------------------------------------------------------------------------------
-  # System actions
-
-  # Returns a process object.
-  # def systemCmd(commandStr)
-
-  #   @system.execute(commandStr)
-
-  # end
-
-  #-------------------------------------------------------------------------------
   # File methods
 
   def loadData
@@ -164,7 +131,7 @@ class DeploymentActions
     savedFile = File.open(@dataFile, 'w') {|f| f.write(serialisedApps) }
     if savedFile.nil?
       @put.error("Something went wrong saving the data file")
-      return 1
+      exit
     end
   end
 
