@@ -97,8 +97,6 @@ class DeploymentActions
     @nginx  = Nginx.new
     @thin   = Thin.new
 
-    @dashes = '----------------------'
-
     loadData
 
   end
@@ -446,29 +444,29 @@ class DeploymentActions
   # Relocating to Thin class
 
   def startThin(appName)
-    @put.normal "Starting thin for #{appName}"
-    command = @system.execute( "thin start -C /etc/thin/#{appName}.yml" )
-    if command.success?
-      @put.confirm
-    else
-      @put.error "Could not start Thin"
-      exit
-    end
-    # @thin.start(appName)
+    # @put.normal "Starting thin for #{appName}"
+    # command = @system.execute( "thin start -C /etc/thin/#{appName}.yml" )
+    # if command.success?
+    #   @put.confirm
+    # else
+    #   @put.error "Could not start Thin"
+    #   exit
+    # end
+    @thin.start(appName)
   end
 
   # Relocating to Thin class
 
   def stopThin(appName)
-    @put.normal "Stopping thin for #{appName}"
-    command = @system.execute( "thin stop -C /etc/thin/#{appName}.yml" )
-    if command.success?
-      @put.confirm
-    else
-      @put.error "Could not stop Thin"
-      exit
-    end
-    # @thin.stop(appName)
+    # @put.normal "Stopping thin for #{appName}"
+    # command = @system.execute( "thin stop -C /etc/thin/#{appName}.yml" )
+    # if command.success?
+    #   @put.confirm
+    # else
+    #   @put.error "Could not stop Thin"
+    #   exit
+    # end
+    @thin.stop(appName)
   end
 
   def startApp(appName)
@@ -630,10 +628,8 @@ class DeploymentActions
       exit
     end
 
-    dashes = "-----------------------"
     print "\n#{@cya}Creating application '#{appName}'\n"
-    print dashes[0, appName.length]
-    print "#{dashes}\n"
+    puts "-" * (appName.length + 21)
 
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Create empty application:
@@ -675,11 +671,9 @@ class DeploymentActions
   #
   def appStatus(appName)
 
-    dashes = '----------------------'
-
     print "\n#{@gre}#{appName.capitalize} application's details\n"
-    print dashes[0, appName.length]
-    print "#{dashes}\n"
+    puts '-' * (appName.length + 22)
+
     print "\n#{@ncl}URL .............. #{@gre}"
     print @apps[appName]["url"]
     print "\n#{@ncl}Ports ............ #{@gre}"
