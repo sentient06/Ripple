@@ -1,0 +1,5 @@
+When first logging in, execute the following action:
+
+source /etc/profile.d/rvm.sh
+
+Exit and login again. =)

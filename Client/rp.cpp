@@ -1,5 +1,5 @@
 //  main.cpp
-//  Ruby Deployment for Humans
+//  Ripple
 //
 //  Created by Giancarlo Mariot on 02/01/2013.
 //  Copyright (c) 2012 Giancarlo Mariot. All rights reserved.
