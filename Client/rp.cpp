@@ -37,9 +37,9 @@
 // application to someone likely to mess up with your server.
 // ------------------------------------------------------------------------------
 //
-// g++ rdh.cpp
+// g++ rp.cpp
 // ./a.out list
-// ln -s /Users/<path>/RDH/Client/a.out /usr/local/bin/rdh
+// ln -s /Users/<path>/RDH/Client/a.out /usr/local/bin/rp
 // http://www.cplusplus.com/forum/articles/13355/
 
 #include <iostream>
@@ -116,7 +116,7 @@ int saveConfig(const char* dir, const char* server) {
 //     FILE *output = popen(pingCommand.c_str(), "r");
 
 // }
-int checkOnlineServer(string serverAddr){
+int checkOnlineServer(string serverAddr) {
     string pingCommand = "ping -c 1 -W 1000 " + serverAddr;
     FILE *output;
     // cout << "Running " << pingCommand.c_str() << " -- " << endl << endl;
@@ -131,16 +131,28 @@ int checkOnlineServer(string serverAddr){
 /**
  * Displays error message for missing application's name.
  */
-void errorAppName(){
+void errorAppName() {
     cout << red << "Please define a name for the application." << ncl << endl << endl;
 }
 
-void errorAppAddr(){
+void errorAppAddr() {
     cout << red << "Please define the URL." << ncl << endl << endl;
 }
 
 void errorAppAddrAndServer(){
     cout << red << "Please define the URL and/or the number of ports." << ncl << endl << endl;
+}
+
+int installServer() {
+    // scp prepare.sh install.sh post-update ripple-read-me.txt gian@ubuntu:~
+    // scp prepare.sh gian@ubuntu:~
+    // scp install.sh gian@ubuntu:~
+    // scp post-update gian@ubuntu:~
+    // scp ripple-read-me.txt gian@ubuntu:~
+    // ssh -t gian@ubuntu "bash prepare.sh"
+    // ssh -t gian@ubuntu "bash install.sh"
+    // git remote add ubuntu12 git@ubuntu12:repositories/mint.git
+    return 0;
 }
 
 /**
@@ -269,7 +281,7 @@ int main (int argc, const char * argv[]) {
 
     char user[16]    = "bot";
     // char server[11]  = "ubuntu12";
-    char action[8]  = "sh";
+    char action[8]  = "bash";
     char trigger[64] = "\\$HOME/trigger.sh";
 
     // Variables variables?

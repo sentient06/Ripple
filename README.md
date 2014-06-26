@@ -1,4 +1,4 @@
-#Ruby Deployment for Humans
+#Ripple - Ruby Deployment for Humans
 
 These files are intended to be used in a ruby on rails in production environment and make the deployment as easy to use as a 'git-push'.
 
@@ -6,7 +6,11 @@ The workflow is inspired by Heroku.
 
 Please refer to the wiki on Github for details.
 
-##To update server using git (testing solution):
+##To setup server using git (prototype):
+
+This method was tested only on Ubuntu 12 Server.
+The server should have nothing more than SSH access and a pair of RSA keys.
+The user must be able to use "sudo" and log in through SSH.
 
 First, use admin to execute `sudo visudo`:
 

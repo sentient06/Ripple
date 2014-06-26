@@ -9,6 +9,7 @@ pur="\033[0;35m"
 cya="\033[0;36m"
 ncl="\033[0m" #No colour
 
+mainUser=`whoami`
 PATH=$PATH:/usr/local/rvm/bin # Add RVM to PATH for scripting
 [[ -s "/usr/local/rvm/scripts/rvm" ]] && . "/usr/local/rvm/scripts/rvm" # Load RVM function
 printf "\n\n${cya}Installing RVM Requirements${ncl}\n\n"
@@ -84,9 +85,25 @@ echo "deploy:${deployPassword}" | sudo chpasswd
 echo "git:${gitPassword}" | sudo chpasswd
 sudo gpasswd --members bot,deploy,git rvm
 sudo gpasswd --members bot,git deploy
-sudo sh -c "echo \"bot      ALL=(git)      NOPASSWD: ALL\ndeploy   ALL=(git)      NOPASSWD: ALL\ndeploy   ALL=(postgres) NOPASSWD: ALL\n%deploy  ALL=(deploy)   NOPASSWD: ALL\n\ndeploy   ALL=(ALL) NOPASSWD: /usr/sbin/service nginx start, /usr/sbin/service nginx stop\ndeploy   ALL=(ALL) NOPASSWD: /usr/sbin/service thin start, /usr/sbin/service thin stop\" >> /etc/sudoers"
-sudo sh -c "echo \"\n# Disable root login\nPermitRootLogin no\n\n#Allow the following users\nAllowUsers gian git bot deploy\" >> /etc/ssh/sshd_config"
+# sudo sh -c "echo \"bot      ALL=(git)      NOPASSWD: ALL\ndeploy   ALL=(git)      NOPASSWD: ALL\ndeploy   ALL=(postgres) NOPASSWD: ALL\n%deploy  ALL=(deploy)   NOPASSWD: ALL\n\ndeploy   ALL=(ALL) NOPASSWD: /usr/sbin/service nginx start, /usr/sbin/service nginx stop\ndeploy   ALL=(ALL) NOPASSWD: /usr/sbin/service thin start, /usr/sbin/service thin stop\" >> /etc/sudoers"
+visudoFile="
+    bot      ALL=(git)      NOPASSWD: ALL
+    git      ALL=(bot)      NOPASSWD: /bin/rm, /bin/ln
+    deploy   ALL=(git)      NOPASSWD: ALL
+    deploy   ALL=(postgres) NOPASSWD: ALL
+    %deploy  ALL=(deploy)   NOPASSWD: ALL
+    deploy   ALL=(ALL) NOPASSWD: /usr/sbin/service nginx start, /usr/sbin/service nginx stop
+    deploy   ALL=(ALL) NOPASSWD: /usr/sbin/service thin start, /usr/sbin/service thin stop
+"
+sudo sh -c "echo \"${visudoFile}\" >> /etc/sudoers"
+sudo sh -c "echo \"\n# Disable root login\nPermitRootLogin no\n\n#Allow the following users\nAllowUsers ${mainUser} git bot deploy\" >> /etc/ssh/sshd_config"
 sudo service ssh restart
+sudo mkdir /home/git/.ssh
+sudo mkdir /home/bot/.ssh
+sudo cp /home/$mainUser/.ssh/authorized_keys /home/git/.ssh/authorized_keys
+sudo cp /home/$mainUser/.ssh/authorized_keys /home/bot/.ssh/authorized_keys
+sudo chown -R git:git /home/git/.ssh
+sudo chown -R bot:bot /home/bot/.ssh
 printf "\n\n${cya}Changing directory permissions${ncl}\n\n"
 sleep 3
 sudo mkdir /var/www
