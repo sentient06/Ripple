@@ -292,7 +292,7 @@ int main (int argc, const char * argv[]) {
     string servers    = "";
 
     string userName   = exec(const_cast<char *>("whoami"));
-    string configDir  = "/Users/" + userName.substr(0,userName.length()-1)  + "/Library/Application Support/RDH/";
+    string configDir  = "/Users/" + userName.substr(0,userName.length()-1)  + "/Library/Application Support/Ripple/";
     string configFile = configDir + "config";
     string serverAddr = readConfig(const_cast<char *>(configFile.c_str()));
     // The name comes with a line-break.
@@ -300,11 +300,11 @@ int main (int argc, const char * argv[]) {
 
     // Check arguments number and display help if necessary
 
-    if ( argc == 1 || string(argv[1]) == "help" ) {
+    if ( argc == 1 && string(argv[1]) == "help" ) {
         displayHelp(argc, argv);
         return 0;
 
-    } else if ( argc == 1 || string(argv[1]) == "server" ) {
+    } else if ( argc == 1 && string(argv[1]) == "server" ) {
         if(argv[2] == NULL){
             // cout << "argh!" << endl;
             if (serverAddr == ""){
