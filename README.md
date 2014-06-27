@@ -39,7 +39,7 @@ This can be achieved by browsing to the Ripple/Client/Ripple/Ripple/ directory a
 
 ###Try it!
 
-Now you can execute all RDH actions using your `rdh` command and if you want to make any changes, you can commit to your server.
+Now you can execute all Ripple actions using your `rp` command and if you want to make any changes, you can commit to your server.
 
     rp server myserver
     rp test
