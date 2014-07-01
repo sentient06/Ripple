@@ -1,15 +1,23 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-red='\033[0;31m';
-gre='\033[0;32m';
-yel='\033[0;33m';
-ncl='\033[0m'; #No colour
-
-echo "${gre}Post receive hook: Updating <%= appName %>...${yel}"
-
+export rvmsudo_secure_path=1
 export GIT_WORK_TREE=/var/www/<%= appName %>
+
+PATH=$PATH:/usr/local/rvm/bin # Add RVM to PATH for scripting
+[[ -s "/usr/local/rvm/scripts/rvm" ]] && . "/usr/local/rvm/scripts/rvm" # Load RVM function
+ruby=`which ruby`
+#rvmsd=`which rvmsudo`
+
+red="\033[0;31m"
+gre="\033[0;32m"
+yel="\033[0;33m"
+ncl="\033[0m" #No colour
+
+printf "\n\n${gre}Post receive hook: Updating <%= appName %>...${yel}\n\n"
+
 cd $GIT_WORK_TREE
 sudo -u deploy git pull
 sudo -u deploy git checkout master -f
-/usr/local/rvm/bin/rvmsudo -u deploy /usr/local/rvm/bin/ruby /home/deploy/scripts/trigger.rb deploy <%= appName %>
-echo "${ncl}"
+
+/usr/local/rvm/bin/rvmsudo -u deploy $ruby /home/deploy/scripts/trigger.rb deploy <%= appName %>
+printf "${ncl}"

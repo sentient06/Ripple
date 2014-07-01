@@ -1,10 +1,12 @@
+// g++ -o ripple main.cpp App.cpp Data.cpp Help.cpp Output.cpp Pigeon.cpp Server.cpp
+// ln -s `pwd`/ripple /usr/local/bin/rp
 //
+// ------------------------------------------------------------------------------
 //  main.cpp
 //  Ripple
 //
 //  Created by Giancarlo Mariot on 26/06/2014.
 //  Copyright (c) 2014 Giancarlo Mariot. All rights reserved.
-//
 // ------------------------------------------------------------------------------
 //
 //  Redistribution and use in source and binary forms, with or without
@@ -42,19 +44,10 @@
 // with your server.
 // ------------------------------------------------------------------------------
 //
-// XCode is recommended for compiling.
-//
-// For quick console compilation (G++):
-// g++ -o ripple main.cpp App.cpp Data.cpp Help.cpp Output.cpp Pigeon.cpp Server.cpp
-//
-// ln -s `pwd`/ripple /usr/local/bin/rp
-//
 // http://www.cplusplus.com/forum/articles/13355/
 
 #include <iostream>
 #include <string>
-//#include <fstream>
-//#include <sys/stat.h>
 
 #include "Help.h"
 #include "Data.h"

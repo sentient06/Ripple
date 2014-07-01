@@ -74,11 +74,13 @@ string App::add(int argc, const char * argv[]) {
         if (!(string(argv[0]).empty()))
             name = string(argv[0]);
         if (!(string(argv[1]).empty()))
-            url  = string(argv[1]);
+            url = string(argv[1]);
     }
+
     if (ports == 0)
-        if (!(string(argv[2]).empty()))
-            ports = (int)strtoul(argv[2], 0, 0);
+        if (argc > 2)
+            if (!(string(argv[2]).empty()))
+                ports = (int)strtoul(argv[2], 0, 0);
     
     // If something is still missing, throw error:
     if (name.empty())

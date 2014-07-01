@@ -80,6 +80,7 @@ class DeploymentActions
       exit
     end
 
+    @server               = "<server>"
     @deployerUser         = generalData['deployerUser']
     @gitUser              = generalData['gitUser']
     @dataFile             = generalData['dataFile']
@@ -89,13 +90,26 @@ class DeploymentActions
     @databaseYml          = generalData['databaseYml']
     @nginxAvailableFolder = generalData['nginxAvailableFolder']
     @nginxEnabledFolder   = generalData['nginxEnabledFolder']
+    @rubyPath             = ENV["MY_RUBY_HOME"] + "/bin/ruby" #(`which ruby`).delete("\n")
+
+    # print "@deployerUser         ->  #{@deployerUser}\n"
+    # print "@gitUser              ->  #{@gitUser}\n"
+    # print "@dataFile             ->  #{@dataFile}\n"
+    # print "@repositoriesFolder   ->  #{@repositoriesFolder}\n"
+    # print "@templatesFolder      ->  #{@templatesFolder}\n"
+    # print "@productionFolder     ->  #{@productionFolder}\n"
+    # print "@databaseYml          ->  #{@databaseYml}\n"
+    # print "@nginxAvailableFolder ->  #{@nginxAvailableFolder}\n"
+    # print "@nginxEnabledFolder   ->  #{@nginxEnabledFolder}\n"
+    # print "@rubyPath             ->  #{@rubyPath}\n"
 
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 
     @system = System.new
     @put    = Put.new
-    @nginx  = Nginx.new
+    @nginx  = Nginx.new(@templatesFolder, @nginxAvailableFolder, @nginxEnabledFolder)
     @thin   = Thin.new
+    @git    = Git.new(@rubyPath, @gitUser, @repositoriesFolder, @productionFolder)
 
     loadData
 
@@ -108,20 +122,19 @@ class DeploymentActions
     puts "dataFile\nrepositoriesFolder\ntemplatesFolder\nproductionFolder\ndatabaseYml\nlastMsg\napps"
   end
 
-  attr_reader :dataFile, :repositoriesFolder, :templatesFolder, :productionFolder, :databaseYml, :lastMsg, :apps
+  attr_reader :dataFile, :repositoriesFolder, :templatesFolder, :productionFolder, :databaseYml, :lastMsg, :apps, :rubyPath
 
   #-------------------------------------------------------------------------------
   # File methods
 
   def loadData
-
+    # @put.static @dataFile
     unless File.exists?(@dataFile)
       @apps = Hash.new
-      @put.green "List of apps unavailable."
+      @put.static "List of apps unavailable."
     else
       @apps = Marshal.load File.read(@dataFile)
     end
-
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -133,6 +146,176 @@ class DeploymentActions
       @put.error("Something went wrong saving the data file")
       exit
     end
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+  # Lists all applications names, ports used and url.
+  #
+  def list
+    if @apps.count < 1
+      @put.static "No applications found.\n"
+      exit
+    end
+    # Iterate through all apps and print
+    len    = 15
+    bigKey = @apps.keys.max { |a, b| a.length <=> b.length }
+    len    = bigKey.length
+    print "\nList of applications\n--------------------\n"
+    @apps.each {|key, value|
+      printf("#{@ncl} [#{@gre}%-#{len}s#{@ncl}] - #{@gre}%02d#{@ncl}p | #{@gre}%4d#{@ncl} | #{@pur}%s%s%s%s%s%s%s#{@ncl} | #{@gre}%s#{@ncl}\n",
+          key.to_s,
+          value['ports'].count,
+          value['ports'][0],
+          value["repository"] ? "R" : "-",
+          value["thin"]       ? "T" : "-",
+          value["available"]  ? "A" : "-",
+          value["enabled"]    ? "E" : "-",
+          value["db"]         ? "D" : "-",
+          value["online"]     ? "O" : "-",
+          value["update"]     ? "U" : "-",
+          value['url']
+        )
+    }
+    print "\n"
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Creates a new application
+  #
+  def addApplication(appName, appURL, appPorts)  
+    # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+    # Check for errors:
+    if appName.nil?
+      @put.error "Define a name to create this application"
+      exit
+    end
+    if appURL.nil?
+      @put.error "Define an URL to create this application"
+      exit
+    end
+    if appPorts.nil?
+      appPorts = 1
+    end
+    unless @apps[appName].nil?
+      @put.error "There is already an app with this name"
+      exit
+    end
+    print "\n#{@cya}Creating application '#{appName}'\n"
+    puts "-" * (appName.length + 21)
+    # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+    # Create empty application:
+    @apps[appName]               = Hash.new
+    @apps[appName]["name"]       = appName
+    @apps[appName]["url"]        = appURL # application dns - Test with an array
+    @apps[appName]["ports"]      = []     # thin ports
+    @apps[appName]["repository"] = false  # repository created
+    @apps[appName]["thin"]       = false  # thin configuration
+    @apps[appName]["available"]  = false  # nginx available config
+    @apps[appName]["enabled"]    = false  # nginx enabled config
+    @apps[appName]["db"]         = false  # existing database
+    @apps[appName]["online"]     = false  # online
+    @apps[appName]["update"]     = true   # must update thin and nginx files
+    # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+    # Set git repository for deployment:
+    # setApplicationPorts(appName, appPorts.to_i)
+    appPorts.to_i.times { @apps[appName]["ports"].push(0) }
+    setNewApplicationsPorts
+    # ----------
+    success = @git.createRepository(appName)
+    unless success == 1
+      @apps[appName]["repository"] = true
+      saveData
+    else
+      exit
+    end
+    success = @git.cloneRepository(appName)
+    if success == 1
+      exit
+    end
+    @put.green "Your application's repository is ready."
+    @put.green "Please add the remote address:"
+    @put.static "git remote add #{@server} git@#{@server}:repositories/#{appName}.git"
+    print "\n"
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Updates both Nginx and Thin config files for any outdated applications.
+  #
+  def updateConfigs
+    toUpdate = @apps.select{|appName, keys|
+      keys['update'] == true
+    }
+    toUpdate.each {|appName, keys|
+      # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+      # Save server configurations:
+      success = @nginx.availConfigFile(@apps[appName])
+      unless success == 1
+        @apps[appName]["available"] = true
+      else
+        exit
+      end
+      @thin.saveConfigFile(@apps[appName])   # thin
+      unless success == 1
+        @apps[appName]["thin"] = true
+      else
+        exit
+      end
+      @apps[appName]["update"] = false
+    }
+    saveData
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Resets ports setup for all applications
+  #
+  def setNewApplicationsPorts
+    firstPort = 3000
+    currentPort = firstPort
+    # Iterate apps and store used ports
+    @apps.each {|key, anApp|
+      originalSetup = anApp['ports']
+      totalPorts    = anApp['ports'].count
+      @apps[key]['ports'] = []
+      totalPorts.times do |i|
+        @apps[key]['ports'].push(currentPort)
+        currentPort += 1
+      end
+      unless @apps[key]['ports'] == originalSetup
+        @apps[key]['update'] = true
+      end
+    }
+    saveData
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  def setApplicationPorts(appName, appPorts)
+    firstPort               = 3000
+    @apps[appName]['ports'] = []
+    usedPorts               = []
+    newPorts                = []
+    # Iterate apps and store used ports
+    @apps.each {|key, anApp|
+      anApp['ports'].each {|port|
+        usedPorts.push(port)
+      }
+    }
+    # Last port used
+    lastPort = usedPorts.none? ? firstPort : usedPorts.max
+    # New ports in range
+    (firstPort..lastPort).each {|v|
+      unless usedPorts.include? v
+        newPorts.push(v)
+      end
+    }
+    # New ports out of range
+    if newPorts.count < appPorts
+      remainingPorts = ports-newPorts.count
+      (lastPort+1..lastPort+remainingPorts).each {|v|
+          newPorts.push(v)
+      }    
+    end
+    @apps[appName]['ports'] = newPorts
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -176,13 +359,13 @@ class DeploymentActions
 
     if thinConfigChange.length > 0
       thinConfigChange.each { |app|
-        saveThinConfigFile(app)
+        @thin.saveConfigFile(@apps[app])
       }
     end
 
     if nginxConfigChange.length > 0
       nginxConfigChange.each { |app|
-        availNginxConfigFile(app)
+        @nginx.availConfigFile(@apps[app])
       }
     end
 
@@ -190,130 +373,6 @@ class DeploymentActions
 
   #---------------------------------------------------------------------------
   # Secondary methods
-
-  def createRepository(appName, createHook=true)
-
-    # Checks for repository:
-
-    repositoryFolder = "#{@repositoriesFolder}#{appName}.git"
-
-    if File.exists?(repositoryFolder)
-      @put.error "Repository folder already exists"
-      return
-    end
-
-    # Creates folder:
-
-    @put.normal "Creating repository folder for #{appName}"
-
-    createFolder = @system.execute("sudo -u #{@gitUser} mkdir #{repositoryFolder}")
-
-    if createFolder.success?
-      @put.confirm
-    else
-      @put.error "Could not create git folder"
-      exit     
-    end
-
-    # Creates git bare respository
-
-    @put.normal "Creating bare repository for #{appName}"
-
-    createGit = @system.execute("sudo -u #{@gitUser} git init #{repositoryFolder}/ --bare")
-
-    if createGit.success?
-      @put.confirm
-    else
-      @put.error "Could not create git repository"
-      exit
-    end
-
-    # Saves the post-update hook:
-    if createHook==true
-      @put.normal "Creating hooks for #{appName}"
-
-      createHook = @system.execute("sudo -u #{@gitUser} /usr/local/rvm/bin/ruby /home/#{@gitUser}/scripts/createHook.rb #{appName}")
-
-      if createHook.success?
-        @put.confirm
-      else
-        print "\n"
-        @put.error "Could not create hook"
-        exit
-      end
-    end
-
-    @apps[appName]["repository"] = true
-    saveData
-
-  end
-
-  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  def cloneRepository(appName)
-
-    @put.normal "Cloning repository for #{appName}"
-
-    # Cloning:
-    cloneGit = @system.execute( "git clone #{@repositoriesFolder}#{appName}.git #{@productionFolder}#{appName}" )
-
-    if cloneGit.success?
-      @put.confirm
-    else
-      @put.error "Repository could not be cloned"
-      exit
-    end
-
-    # Permissions to 775:
-
-    @put.normal "Changing repository's permissions"
-
-    cloneGit = @system.execute("chmod -R 775 #{@productionFolder}#{appName}")
-
-    if cloneGit.success?
-      @put.confirm
-    else
-      @put.error "Could not change repository's permissions"
-      exit
-    end
-
-  end
-
-  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  def availNginxConfigFile(appName)
-
-    # Set variables for template:
-
-    appUrl   = @apps[appName]["url"] #ERB
-    appPorts = @apps[appName]["ports"]
-    appFirst = @apps[appName]["first"]
-    upstream = ""
-
-    appPorts.times do |i|
-      upstream += "    server 127.0.0.1:#{appFirst+i};\n"
-    end
-
-    # Saving file:
-
-    @put.normal "Saving Nginx configuration file"
-
-    file = "#{@templatesFolder}nginx.erb"
-    nginxTemplate = ERB.new(File.read(file))
-    nginxConfig = nginxTemplate.result(binding)
-    nginxCommand = File.open("#{@nginxAvailableFolder}#{appName}.conf", 'w') {|f| f.write(nginxConfig) }
-
-    unless nginxCommand.nil?
-      @put.confirm
-    else
-      @put.error "Could not save Nginx configuration"
-      return
-    end
-
-    @apps[appName]["available"] = true
-    saveData 
-
-  end
 
   def enableNginxConfigFile(appName)
 
@@ -388,27 +447,6 @@ class DeploymentActions
     else
       @put.green "No config file found."
     end
-
-  end
-
-  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  
-  def saveThinConfigFile(appName)
-
-    @put.normal "Saving Thin configuration for #{appName}"
-    appPorts = @apps[appName]["ports"]
-    appFirst = @apps[appName]["first"]
-    thinCommand = @system.execute("thin config -C /etc/thin/#{appName}.yml -c /var/www/#{appName} --servers #{appPorts} -e production -p #{appFirst}")
-
-    if thinCommand.success?
-      @put.confirm
-    else
-      @put.error "Could not save Thin configuration for #{appName}"
-      return
-    end
-
-    @apps[appName]["thin"] = true
-    saveData
 
   end
 
@@ -576,95 +614,7 @@ class DeploymentActions
 
   end
 
-  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-  # Lists all applications names, ports used and url.
-  #
-  def list
 
-    if @apps.count < 1
-      @put.green "No applications found."
-      exit
-    end
-
-    # Iterate through all apps and print
-    len    = 15
-    bigKey = @apps.keys.max { |a, b| a.length <=> b.length }
-    len    = bigKey.length
-
-    print "\nList of applications\n--------------------\n"
-
-    @apps.each {|key, value|
-      printf(" [#{@gre}%-#{len}s#{@ncl}] - #{@gre}%2d#{@ncl} ports starting on #{@gre}%4d#{@ncl}, url: #{@gre}%s#{@ncl}\n", key.to_s, value['ports'], value['first'], value['url'])
-    }
-
-    print "\n"
-
-  end
-
-  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  # Creates a new application
-  #
-  def create(appName, appURL, appPorts)
-    
-    # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-    # Check for errors:
-
-    if appName.nil?
-      @put.error "Define a name to create this application"
-      exit
-    end
-
-    if appURL.nil?
-      @put.error "Define an URL to create this application"
-      exit
-    end
-
-    if appPorts.nil?
-      appPorts = 1
-    end
-
-    unless @apps[appName].nil?
-      @put.error "There is already an app with this name"
-      exit
-    end
-
-    print "\n#{@cya}Creating application '#{appName}'\n"
-    puts "-" * (appName.length + 21)
-
-    # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-    # Create empty application:
-
-    @apps[appName]               = Hash.new
-    @apps[appName]["url"]        = appURL        # application dns - Test with an array
-    @apps[appName]["ports"]      = appPorts.to_i # quantity of thin ports
-   #@apps[appName]["first"]      = 3000 + x
-    @apps[appName]["repository"] = false  # repository created
-    @apps[appName]["thin"]       = false  # thin configuration
-    @apps[appName]["available"]  = false  # nginx available config
-    @apps[appName]["enabled"]    = false  # nginx enabled config
-    @apps[appName]["db"]         = false  # existing database
-    @apps[appName]["online"]     = false  # online
-
-    saveData
-
-    # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-    # Set git repository for deployment:
-
-    resetApplicationData     # set 'first'
-    createRepository appName # set 'repository'
-
-    # Clone repository for further use:
-
-    cloneRepository appName
-
-    # Save server configurations:
-
-    availNginxConfigFile appName # available (should enable at deployment only)
-    saveThinConfigFile appName   # thin
-
-    print "\n"
-
-  end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
   # Prints details about a given application.
@@ -935,8 +885,8 @@ class DeploymentActions
 
     deleteNginxConfigFile(appName)
     deleteThinConfigFile(appName)
-    saveThinConfigFile
-    availNginxConfigFile
+    @thin.saveConfigFile(@apps[appName])
+    @nginx.availConfigFile(@apps[appName])
     enableNginxConfigFile
 
     if @apps[appName]["online"]

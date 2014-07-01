@@ -31,4 +31,23 @@ class Thin
     end
   end
 
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  
+  def saveConfigFile(app)
+    appName  = app["name"]
+    appPorts = app["ports"]
+    appFirst = appPorts[0]
+    servers  = appPorts.count
+    @put.normal "Saving Thin configuration for #{appName}"
+
+    thinCommand = @system.execute("thin config -C /etc/thin/#{appName}.yml -c /var/www/#{appName} --servers #{servers} -e production -p #{appFirst}")
+    if thinCommand.success?
+      @put.confirm
+      return 0
+    else
+      @put.error "Could not save Thin configuration for #{appName}"
+      return 1
+    end
+  end
+
 end

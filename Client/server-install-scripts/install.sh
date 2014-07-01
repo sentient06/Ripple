@@ -115,8 +115,12 @@ printf "\n${cya}Installing Ripple${ncl}\n\n"
 sleep 3
 sudo mkdir -p /ripple/master
 sudo mkdir -p /ripple/ripple.git
+sudo mkdir /home/git/repositories
+sudo mkdir /home/deploy/data
 sudo chown -R git:git /ripple
+sudo chown git:git /home/git/repositories
 sudo chown deploy:deploy /ripple/master
+sudo chown deploy:deploy /home/deploy/data
 sudo chmod 775 /ripple/master
 cd /ripple/ripple.git
 sudo -u git git init --bare

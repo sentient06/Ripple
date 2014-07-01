@@ -4,6 +4,7 @@ rp help
     Displays help
 rp help <command>
     Displays help of <command>
+---------------------------------------
 rp server
     Displays server name
 rp server list
@@ -14,21 +15,21 @@ rp server remove <server>
     Removes a server <server>
 rp server use <server>
     Assigns a server <server>
+---------------------------------------
 rp test
     Tests <server>
 rp list
     Lists apps from <server>
-
+---------------------------------------
 rp add --app <app> --url <url> --ports <ports>
 rp add -a <app> -u <url> -p <ports>
 rp + <app> <url> <ports>
     Adds an <app> to <server> using url <url> and <ports> ports
-
+---------------------------------------
 rp app <app> <command>
 rp -a <app> <command>
 rp . <app> <command>
     Executes <command> for <app>
-
 rp . <app> set <option> <value>
     Sets an <option> of an <app> to value <value>
 rp . <app> stop
@@ -41,15 +42,14 @@ rp . <app> restart
     Restarts <app>
 rp . <app> start
     Starts <app>
-
 rp . <app> avail
     Saves Nginx config file for <app>
 rp . <app> hinder
     Deletes Nginx config file for <app>
-
+---------------------------------------
 rp delete -a <app>
     Removes an <app> from <server>
-
+---------------------------------------
 rp nginx <command>
 rp -n <command>
     Executes <command> for nginx
