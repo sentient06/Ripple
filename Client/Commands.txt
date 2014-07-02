@@ -56,3 +56,9 @@ rp -n <command>
 rp thin <command>
 rp -t <command>
     Executes <command> for thin
+---------------------------------------
+rp all <command>
+rp all update
+rp all stop
+rp all restart
+rp all 

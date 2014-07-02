@@ -15,7 +15,8 @@ PATH=$PATH:/usr/local/rvm/bin # Add RVM to PATH for scripting
 printf "\n\n${cya}Installing RVM Requirements${ncl}\n\n"
 sleep 3
 rvm requirements
-printf "\n\n${cya}Installing Ruby${ncl}\n\n"
+printf "\n\n${cya}Installing Ruby${ncl}\n"
+printf "${pur}This *will* take forever. Get yourself a coffee and read something.${ncl}\n\n"
 sleep 3
 rvm install ruby-head
 rvm use ruby-head
@@ -33,8 +34,27 @@ sleep 3
 railsVersion=`rails -v | awk '/Rails/{print $2}'`
 originalRubyGems="${rubyVersion}@ripple"
 finalGemset="${rubyVersion}@${railsVersion}"
+rvm gemset use global --default
 rvm gemset rename $originalRubyGems $finalGemset
-rvm gemset use $finalGemset --default
+# rvm gemset use $finalGemset --default
+rvm gemset use $railsVersion --default
+
+printf "\n\n${cya}Fixing RVM known bugs${ncl}\n\n"
+sleep 3
+rvm fix-permissions
+# Hack:
+sudo ln -s `which ruby_executable_hooks` /usr/bin/ruby_executable_hooks
+sudo ln -s `which ruby` /usr/bin/ruby
+#doesn't work:
+# rvm @global do gem install rubygems-bundler
+#gem install executable-hooks -v ">=1.3.2" 
+#gem regenerate_binstubs
+#rvm @global do gem regenerate_binstubs
+#gem regenerate_binstubs
+# change to https://github.com/sstephenson/rbenv ?
+printf "\n\n${cya}Installing NodeJS${ncl}\n\n"
+sleep 3
+sudo apt-get install --yes nodejs
 printf "\n\n${cya}Installing Thin${ncl}\n\n"
 sleep 3
 gem install --no-rdoc --no-ri thin

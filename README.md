@@ -48,7 +48,11 @@ Now you can execute all Ripple actions using your `rp` command and if you want t
 
 The first installation script installs GIT and RVM (multi-user). It then adds your normal user to the RVM group and restarts the server.
 
-The second script installs the last stable Ruby version, then Rails, then it renames the gemset to match Rails version. Then it installs Thin server and PostgresSQL.
+The second script installs the last stable Ruby version, then Rails, then it renames the gemset to match Rails version.
+
+Then something happens. The RVM permissions get messed up (not my fault), so the script fixes it first. RVM also gets some global gems messed up, so there are two symbolic links created to address that. (I am considering dropping RVM soon because of these things).
+
+Then it installs NodeJS, Thin and PostgresSQL.
 
 It prompts the user for a root password for PostgresSQL, then it changes the "peer" entries for "md5" in the PostgresSQL config file. Then it installs Nginx and prompts for passwords for the creation of 3 users called: 'bot', 'git' and 'deploy'.
 

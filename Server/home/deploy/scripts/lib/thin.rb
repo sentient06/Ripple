@@ -7,11 +7,12 @@ class Thin
   def initialize
     @put    = Put.new
     @system = System.new
+    @thinPath = ENV["rvm_path"] + "/gems/" + ENV["RUBY_VERSION"] + "@ripple/bin/thin"
   end
 
   def start(appName)
     @put.normal "Starting thin for #{appName}"
-    command = @system.execute( "thin start -C /etc/thin/#{appName}.yml" )
+    command = @system.execute( "#{@thinPath} start -C /etc/thin/#{appName}.yml" )
     if command.success?
       @put.confirm
     else
@@ -22,7 +23,7 @@ class Thin
 
   def stop(appName)
     @put.normal "Stopping thin for #{appName}"
-    command = @system.execute( "thin stop -C /etc/thin/#{appName}.yml" )
+    command = @system.execute( "#{@thinPath} stop -C /etc/thin/#{appName}.yml" )
     if command.success?
       @put.confirm
     else
@@ -40,7 +41,7 @@ class Thin
     servers  = appPorts.count
     @put.normal "Saving Thin configuration for #{appName}"
 
-    thinCommand = @system.execute("thin config -C /etc/thin/#{appName}.yml -c /var/www/#{appName} --servers #{servers} -e production -p #{appFirst}")
+    thinCommand = @system.execute("#{@thinPath} config -C /etc/thin/#{appName}.yml -c /var/www/#{appName} --servers #{servers} -e production -p #{appFirst}")
     if thinCommand.success?
       @put.confirm
       return 0

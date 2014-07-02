@@ -107,6 +107,7 @@ string App::parseActions(int argc, const char * argv[]) {
     if ( string(argv[1]) == "enable"  ) return enable(argv[0]);
     if ( string(argv[1]) == "disable" ) return disable(argv[0]);
     if ( string(argv[1]) == "avail"   ) return avail(argv[0]);
+    if ( string(argv[1]) == "deploy"  ) return deploy(argv[0]);
     if ( string(argv[1]) == "hinder"  ) return hinder(argv[0]);
     if ( string(argv[1]) == "delete"  ) return remove(argv[0]);
     return "err1";
@@ -139,6 +140,10 @@ string App::disable(const char app[]) {
 }
 string App::avail(const char app[]) {
     snprintf(cmd, 512, "avail %s", app);
+    return string(cmd);
+}
+string App::deploy(const char app[]) {
+    snprintf(cmd, 512, "deploy %s", app);
     return string(cmd);
 }
 string App::hinder(const char app[]) {

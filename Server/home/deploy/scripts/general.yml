@@ -1,3 +1,4 @@
+serverName:           "ubuntu"
 gitUser:              "git"
 deployerUser:         "deploy"
 dataFile:             "/home/deploy/data/apps"

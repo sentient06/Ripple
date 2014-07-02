@@ -29,6 +29,7 @@ public:
     std::string enable(const char app[]);
     std::string disable(const char app[]);
     std::string avail(const char app[]);
+    std::string deploy(const char app[]);
     std::string hinder(const char app[]);
     std::string remove(const char app[]);
 };
