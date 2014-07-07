@@ -25,21 +25,50 @@ if ARGV[0] == 'add'
 end
 # ---------------------------------------
 # rp app <app> <command> # Executes <command> for <app>
-# rp app <app> set <option> <value> # Sets an <option> of an <app> to value <value>
-# rp app <app> stop # Stops <app> from running
-# rp app <app> disable # Disables from Nginx
-# rp app <app> enable # Enables in Nginx
-# rp app <app> restart # Restarts <app>
-# rp app <app> start # Starts <app>
-# rp app <app> avail # Saves Nginx config file for <app>
-# rp app <app> hinder # Deletes Nginx config file for <app>
-# rp app <app> deploy # Deploys <app>
-if ARGV[0] == 'deploy'
-    deployer.deploy ARGV[1]
+# rp app <app> status # Check status of app <app>
+if ARGV[0] == 'status'
+    deployer.appStatus ARGV[1]
 end
 # rp app <app> destroy # Destroys <app>
 if ARGV[0] == 'destroy'
     deployer.destroy ARGV[1]
+end
+# rp app <app> stop # Stops <app> from running
+if ARGV[0] == 'stop'
+    deployer.stopApplication ARGV[1]
+end
+# rp app <app> disable # Disables from Nginx
+if ARGV[0] == 'disable'
+    deployer.disable ARGV[1]
+end
+# rp app <app> hinder # Deletes Nginx config file for <app>
+if ARGV[0] == 'hinder'
+    deployer.hinder ARGV[1]
+end
+# rp app <app> restart # Restarts <app>
+if ARGV[0] == 'restart'
+    deployer.restart ARGV[1]
+end
+# rp app <app> avail # Saves Nginx config file for <app>
+if ARGV[0] == 'avail'
+    deployer.avail ARGV[1]
+end
+# rp app <app> enable # Enables in Nginx
+if ARGV[0] == 'enable'
+    deployer.enable ARGV[1]
+end
+# rp app <app> start # Starts <app>
+if ARGV[0] == 'start'
+    deployer.startApplication ARGV[1]
+end
+# rp app <app> deploy # Deploys <app>
+if ARGV[0] == 'deploy'
+    deployer.deploy ARGV[1]
+end
+
+# rp app <app> set <option> <value> # Sets an <option> of an <app> to value <value>
+if ARGV[0] == 'set'
+    deployer.set ARGV[1], ARGV[2]
 end
 # ---------------------------------------
 # rp delete -a <app> # Removes an <app> from <server>

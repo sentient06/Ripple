@@ -22,7 +22,8 @@ public:
     App();
     std::string add(int argc, const char * argv[]);
     std::string parseActions(int argc, const char * argv[]);
-    std::string set(const char app[], const char param[], const char value[]);
+    std::string set(int argc, const char * argv[]);
+    std::string status(const char app[]);
     std::string start(const char app[]);
     std::string stop(const char app[]);
     std::string restart(const char app[]);

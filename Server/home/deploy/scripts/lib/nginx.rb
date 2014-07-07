@@ -15,6 +15,9 @@ class Nginx
     @still                = false
   end
 
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Starts Nginx
+  #
   def start
     @put.normal "Starting Nginx"
     command = @system.execute( "sudo service nginx start" )
@@ -27,6 +30,9 @@ class Nginx
     end
   end
 
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Stops Nginx
+  #
   def stop
     @put.normal "Stopping Nginx"
     command = @system.execute( "sudo service nginx stop" )
@@ -40,16 +46,14 @@ class Nginx
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
+  # Creates Nginx config file for an application
+  #
   def availConfigFile(app)
-
     # Set variables for template:
-
     appUrl   = app["url"] #ERB
     appName  = app["name"]
     appPorts = app["ports"]
     upstream = ""
-
     appPorts.each {|value|
       upstream += "    server 127.0.0.1:#{value};\n"
     }
@@ -72,13 +76,12 @@ class Nginx
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
+  # Enables Nginx config file for an application
+  #
   def enableConfigFile(appName)
-
     nginxConfigFile = "#{@nginxAvailableFolder}#{appName}.conf"
     nginxConfigLink = "#{@nginxEnabledFolder}#{appName}.conf"
     @put.normal "Checking Nginx config file"
-
     if File.exists?(nginxConfigFile)
       unless File.exists?(nginxConfigLink)
         @put.confirm
@@ -96,7 +99,48 @@ class Nginx
       @put.error "Config file non-existent"
       return 1
     end
+  end
 
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Disables Nginx config file for an application
+  #
+  def disableConfigFile(appName)
+    @put.normal "Disabling Nginx configuration for #{appName}"
+    configFile = "#{@nginxEnabledFolder}#{appName}.conf"
+    if File.exists?(configFile)
+      removeCommand = @system.delete(configFile)
+      if removeCommand.success?
+        @put.confirm
+        return 0
+      else
+        @put.error "Could not disable Nginx for #{appName}"
+        return 1
+      end
+    else
+      @put.error "Config file symlink non-existent"
+      return 1
+    end
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Deletes Nginx config file for an application
+  #
+  def deleteConfigFile(appName)
+    @put.normal "Deleting Nginx configuration for #{appName}"
+    configFile = "#{@nginxAvailableFolder}#{appName}.conf"
+    if File.exists?(configFile)
+      removeCommand = @system.delete(configFile)
+      if removeCommand.success?
+        @put.confirm
+        return 0
+      else
+        @put.error "Could not delete Nginx for #{appName}"
+        return 1
+      end
+    else
+      @put.error "Config file non-existent"
+      return 1
+    end
   end
 
 end

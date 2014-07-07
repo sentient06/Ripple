@@ -16,4 +16,8 @@ class System
     $?
   end
 
+  def delete(path)
+    execute("rm -f #{path}")
+  end
+
 end

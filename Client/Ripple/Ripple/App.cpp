@@ -100,7 +100,8 @@ string App::add(int argc, const char * argv[]) {
 }
 
 string App::parseActions(int argc, const char * argv[]) {
-    if ( string(argv[1]) == "set"     ) return set(argv[0], argv[2], argv[3]);
+    if ( string(argv[1]) == "set"     ) return set(argc, argv);
+    if ( string(argv[1]) == "status"  ) return status(argv[0]);
     if ( string(argv[1]) == "start"   ) return start(argv[0]);
     if ( string(argv[1]) == "stop"    ) return stop(argv[0]);
     if ( string(argv[1]) == "restart" ) return restart(argv[0]);
@@ -113,11 +114,27 @@ string App::parseActions(int argc, const char * argv[]) {
     return "err1";
 }
 
-string App::set(const char app[], const char param[], const char value[]) {
-    snprintf(cmd, 512, "set %s %s %s", app, param, value);
+string App::set(int argc, const char * argv[]) {
+    char cmd[512];
+    snprintf(cmd, 512, "set %s", argv[0]);
+    for (int i = 2; i < argc; ++i) {
+        long col = string(argv[i]).find_first_of( ":" );
+        if (col == -1) {
+            return "err3";
+        } else {
+            if (i == 2)
+                snprintf(cmd, 512, "%s %s", cmd, argv[i]);
+            else
+                snprintf(cmd, 512, "%s,%s", cmd, argv[i]);
+        }
+        // cout << string(argv[i]) << " - " << col << endl;
+    }
     return string(cmd);
 }
-
+string App::status(const char app[]) {
+    snprintf(cmd, 512, "status %s", app);
+    return string(cmd);
+}
 string App::start(const char app[]) {
     snprintf(cmd, 512, "start %s", app);
     return string(cmd);

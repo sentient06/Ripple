@@ -133,6 +133,9 @@ class DeploymentActions
   #-------------------------------------------------------------------------------
   # Data methods
 
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Loads application data
+  #
   def loadData
     unless File.exists?(@dataFile)
       @apps = Hash.new
@@ -143,7 +146,8 @@ class DeploymentActions
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
+  # Saves application data
+  #
   def saveData
     serialisedApps = Marshal.dump(@apps)
     savedFile = File.open(@dataFile, 'w') {|f| f.write(serialisedApps) }
@@ -177,7 +181,7 @@ class DeploymentActions
           value["enabled"]    ? "E" : "-",
           value["db"]         ? "D" : "-",
           value["online"]     ? "O" : "-",
-          value["update"]     ? "U" : "-",
+         !value["update"]     ? "U" : "-",
           value['url']
         )
     }
@@ -272,11 +276,13 @@ class DeploymentActions
 
     @put.green "[Deployment]"
 
+    # Update
     if @apps[appName]["update"]
       updateConfigs
       exit
     end
 
+    # Status
     appStatus appName
 
     if @apps[appName]["repository"]
@@ -297,17 +303,24 @@ class DeploymentActions
     end
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    # If already online, stop thin.
+    # If already online, stop thin and disable Nginx for this app
 
     if @apps[appName]["online"]
-      stopApp(appName)
+      @nginx.stop
+      @thin.stop(appName)
+      @apps[appName]["online"] = false
+      if @apps[appName]['enabled']
+        @nginx.disableConfigFile(appName)
+        @apps[appName]['enabled'] = false
+      end
+      saveData
+      @nginx.start
     end
 
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Deploy database
 
     @put.normal "Checking database"
-
     if @apps[appName]["db"] == false
       @put.green "No database on record."
       deployDatabase(appName)
@@ -349,9 +362,9 @@ class DeploymentActions
       migrationsFolder = "#{@productionFolder}#{appName}/db/migrate/"
       migrationsNumber = Dir.glob(File.join(migrationsFolder, '**', '*.rb')).count
       if migrationsNumber > 0
-        @put.normal "#{migrationsNumber} migrations found."
+        @put.static "#{migrationsNumber} migrations found."
         @put.normal "Migrating"
-        migrations = @system.execute("RAILS_ENV=production rake db:migrate")
+        migrations = @system.execute("RAILS_ENV=production #{@rakePath} db:migrate")
         if migrations.success?
           @put.confirm
         else
@@ -378,7 +391,9 @@ class DeploymentActions
     end
 
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    # Nginx enable
+    # If all is fine, start thin and nginx.
+
+    @nginx.stop
 
     success = @nginx.enableConfigFile(appName)
     unless success == 1
@@ -388,30 +403,135 @@ class DeploymentActions
       exit
     end
 
-    # If all is fine, start thin, restart nginx.
-    startApp(appName)
+    success = @thin.start(appName)
+    unless success == 1
+      @apps[appName]["online"] = true
+      saveData
+    else
+      exit
+    end
+
+    @nginx.start
 
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Starts application
   #
-  def startApp(appName)
+  def startApplication(appName)
+    if @apps[appName]["online"]
+      @put.static "Application is already running"
+      return
+    end
+    unless @apps[appName]['enabled']
+      @put.static "Please execute 'enable' command"
+      return
+    end
     @nginx.stop
-    @thin.start(appName)
+    success = @thin.start(appName)
+    unless success == 1
+      @apps[appName]["enabled"] = true
+      saveData
+    else
+      exit
+    end
+    success = @nginx.start
+    unless success == 1
+      @apps[appName]["online"] = true
+      saveData
+    else
+      exit
+    end
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Enables application
+  #
+  def enable(appName)
+    if @apps[appName]['enabled']
+      @put.static "Application is already enabled"
+      return
+    end
+    unless @apps[appName]['available']
+      @put.static "Please execute 'avail' command"
+      return
+    end
+    @nginx.stop
+    @nginx.enableConfigFile(appName)
+    @apps[appName]['enabled'] = true
+    saveData
     @nginx.start
-    @apps[appName]["online"] = true
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Creates Thin and Nginx config files
+  #
+  def avail(appName)
+    if @apps[appName]['available']
+      @put.static "Application is already available"
+      return
+    end
+    @nginx.availConfigFile(@apps[appName])
+    @thin.saveConfigFile(@apps[appName])
+    @apps[appName]["available"] = true
+    @apps[appName]["thin"] = true
     saveData
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  # Stops application
+  # Stops application. Used by user.
   #
-  def stopApp(appName)
-    @nginx.stop
+  def stopApplication(appName, skipNginx = false)
+    unless @apps[appName]["online"]
+      @put.static "Application is already still"
+      return
+    end
+    unless skipNginx
+      @nginx.stop
+    end
     @thin.stop(appName)
-    @nginx.start
+    unless skipNginx
+      @nginx.start
+    end
     @apps[appName]["online"] = false
+    saveData
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Disables application
+  #
+  def disable(appName)
+    unless @apps[appName]['enabled']
+      @put.static "Application is already disabled"
+      return
+    end
+    if @apps[appName]['online']
+      @put.static "Please execute 'stop' command"
+      return
+    end
+    @nginx.stop
+    @nginx.disableConfigFile(appName)
+    @apps[appName]['enabled'] = false
+    saveData
+    @nginx.start
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Deletes Thin and Nginx config files
+  #
+  def hinder(appName)
+    unless @apps[appName]['available']
+      @put.static "Application is already unavailable"
+      return
+    end
+    if @apps[appName]['enabled']
+      @put.static "Please execute 'disable' command"
+      return
+    end
+    @nginx.deleteConfigFile(appName)
+    @thin.deleteConfigFile(appName)
+    @apps[appName]["available"] = false
+    @apps[appName]["thin"] = false
     saveData
   end
 
@@ -525,30 +645,52 @@ class DeploymentActions
   def appStatus(appName)
     print "\n#{@gre}#{appName.capitalize} application's details\n"
     puts '-' * (appName.length + 22)
-    print "\n#{@ncl}URL .............. #{@gre}"
+
+    print "\n#{@ncl}URL .............. "
+    print @cya
     print @apps[appName]["url"]
-    print "\n#{@ncl}Ports ............ #{@gre}"
+
+    print "\n#{@ncl}Ports ............ "
+    print @cya
     print @apps[appName]["ports"]
-    print "\n#{@ncl}Repository ....... #{@gre}"
-    print @apps[appName]["repository"]
-    print "\n#{@ncl}Thin config ...... #{@gre}"
-    print @apps[appName]["thin"]
-    print "\n#{@ncl}Nginx available .. #{@gre}"
-    print @apps[appName]["available"]
-    print "\n#{@ncl}Nginx enabled .... #{@gre}"
-    print @apps[appName]["enabled"]
-    print "\n#{@ncl}Database ......... #{@gre}"
-    print @apps[appName]["db"]
-    print "\n#{@ncl}Online ........... #{@gre}"
-    print @apps[appName]["online"]
-    print "\n#{@ncl}Update ........... #{@gre}"
-    print @apps[appName]["update"]
+
+    print "\n#{@ncl}Repository ....... "
+    print (@apps[appName]["repository"] ? @gre : @red)
+    print  @apps[appName]["repository"]
+
+    print "\n#{@ncl}Thin config ...... "
+    print (@apps[appName]["thin"] ? @gre : @red)
+    print  @apps[appName]["thin"]
+
+    print "\n#{@ncl}Nginx available .. "
+    print (@apps[appName]["available"] ? @gre : @red)
+    print  @apps[appName]["available"]
+
+    print "\n#{@ncl}Nginx enabled .... "
+    print (@apps[appName]["enabled"] ? @gre : @red)
+    print  @apps[appName]["enabled"]
+
+    print "\n#{@ncl}Database ......... "
+    print (@apps[appName]["db"] ? @gre : @red)
+    print  @apps[appName]["db"]
+
+    print "\n#{@ncl}Online ........... "
+    print (@apps[appName]["online"] ? @gre : @red)
+    print  @apps[appName]["online"]
+
+    print "\n#{@ncl}Updated .......... "
+    print (@apps[appName]["update"] ? @red : @gre) 
+    print !@apps[appName]["update"]
+
     print "#{@ncl}\n\n"
   end
 
   #---------------------------------------------------------------------------
   # Action methods
 
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Prints some stuff and tests some server stuff
+  #
   def test
     print "\n"
     print "#{@cya}Printing global variables#{@ncl}\n"
@@ -576,8 +718,9 @@ class DeploymentActions
     print "ruby -v .............. "
     system("#{@rubyPath} -v")
 
-    print "thin -v .............. "
+    print "thin -v .............. " # y u not work!?
     system("#{@thinPath} -v")
+    print "\n"
 
     print "bundle -v ............ "
     system("#{@bundlePath} -v")
@@ -585,50 +728,109 @@ class DeploymentActions
     print "\n"
   end
 
-  # #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  # # Updates both Nginx and Thin config files for any outdated applications.
-  # #
-  # def updateConfigs
-  #   @put.green "Updating applications"
-  #   toUpdate = @apps.select{|appName, keys|
-  #     keys['update'] == true
-  #   }
-  #   if toUpdate.count > 0
-  #     @put.normal "Stopping applications"
-  #     @nginx.stop
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Updates both Nginx and Thin config files for any outdated applications.
+  #
+  def updateConfigs
+    @put.green "Updating applications"
+    toUpdate = @apps.select{|appName, keys|
+      keys['update'] == true
+    }
+    if toUpdate.count > 0
+      @put.normal "Stopping applications"
+      @nginx.stop
+    end
+    toUpdate.each { |appName, keys|
+      if @apps[appName]["thin"] == true
+        @thin.stop(appName)
+      end
+    }
+    if @nginx.still
+      @put.confirm
+    end
+    toUpdate.each { |appName, keys|
+      # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+      # Save server configurations:
+      success = @nginx.availConfigFile(@apps[appName])
+      unless success == 1
+        @apps[appName]["available"] = true
+      else
+        exit
+      end
+      @thin.saveConfigFile(@apps[appName])   # thin
+      unless success == 1
+        @apps[appName]["thin"] = true
+      else
+        exit
+      end
+      @apps[appName]["update"] = false
+    }
+    if @nginx.still
+      @nginx.start
+    end
+    saveData
+  end
+
+  # def set(arguments)
+  #   arguments.each do|a|
+  #     puts "Argument: #{a}"
   #   end
-  #   toUpdate.each { |appName, keys|
-  #     if @apps[appName]["thin"] == true
-  #       @thin.stop(appName)
-  #     end
-  #   }
-  #   if @nginx.still
-  #     @put.confirm
-  #   end
-  #   toUpdate.each { |appName, keys|
-  #     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-  #     # Save server configurations:
-  #     success = @nginx.availConfigFile(@apps[appName])
-  #     unless success == 1
-  #       @apps[appName]["available"] = true
-  #     else
-  #       exit
-  #     end
-  #     @thin.saveConfigFile(@apps[appName])   # thin
-  #     unless success == 1
-  #       @apps[appName]["thin"] = true
-  #     else
-  #       exit
-  #     end
-  #     @apps[appName]["update"] = false
-  #   }
-  #   if @nginx.still
-  #     @nginx.start
-  #   end
-  #   saveData
   # end
 
 
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Sets new value in the apps hash
+  #
+  def set(appName, newValues)
+
+    puts "appname = #{appName}"
+    puts "newValues = #{newValues}"
+
+    unless @apps.has_key?(appName)
+      @put.error "There is no application with the name '#{appName}'"
+      exit
+    end
+
+    # newValues = "url:www.me.com,ports:3"
+    newHash = newValues.split(',').inject(Hash.new{|h,k|h[k]=[]}) do |h, s|
+      k,v = s.split(':')
+      h[k] = v.to_i == 0 ? v : v.to_i
+      h
+    end
+
+    # puts newHash
+    @put.normal "Setting new values"
+
+    resetPorts = false
+
+    newHash.each {|key, value|
+      # @put.green "#{key} = #{value}"
+      if @apps[appName][key].nil?
+        # @put.green "#{key} unknown"
+      else
+        # @put.green "#{key} = #{value}"
+        @apps[appName][key] = value
+        if key == "ports"
+          #resetPorts = true
+          # @put.green "Port support is not implemented"
+        end
+      end
+    }
+
+    # @apps[appName][key] = value
+    saveData
+
+    @put.confirm
+
+    appStatus(appName)
+
+    # if resetPorts
+      # resetApplicationData
+      # @put.normal "Warning: double-check the applications' ports and thin files."
+    # end
+    # resetAll
+
+  end
 
   # #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -719,117 +921,6 @@ class DeploymentActions
 
 
 
-  # #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  # def disableNginxConfigFile(appName)
-
-  #   nginxConfigFile = "#{@nginxAvailableFolder}#{appName}.conf"
-  #   nginxConfigLink = "#{@nginxEnabledFolder}#{appName}.conf"
-
-  #   if File.exists?(nginxConfigLink)
-  #     @put.normal "Deleting symlink for #{appName}"
-  #     nginxCmd1 = @system.execute("rm #{nginxConfigLink}")
-
-  #     if nginxCmd1.success?
-  #       @apps[appName]["enabled"] = false
-  #       @put.confirm
-  #       saveData
-  #     else
-  #       @put.error "Could not delete configuration symlink for #{appName}"
-  #     end
-
-  #   else
-  #     @put.green "No symlink found."
-  #   end
-
-  # end
-
-  # def deleteNginxConfigFile(appName) #hinder?
-
-  #   disableNginxConfigFile(appName)
-
-  #   nginxConfigFile = "#{@nginxAvailableFolder}#{appName}.conf"
-
-  #   if File.exists?(nginxConfigFile)
-
-  #     @put.normal "Deleting Nginx configuration for #{appName}"
-  #     nginxCmd2 = @system.execute("rm #{nginxConfigFile}")
-
-  #     if nginxCmd2.success?
-  #       @apps[appName]["available"] = false
-  #       saveData
-  #       @put.confirm
-  #     else
-  #       @put.error "Could not delete configuration file for #{appName}"
-  #       return
-  #     end
-
-  #   else
-  #     @put.green "No config file found."
-  #   end
-
-  # end
-
-  # #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  # def deleteThinConfigFile(appName)
-
-  #   @put.normal "Deleting Thin configuration for #{appName}"
-  #   thinCmd = @system.execute("rm /etc/thin/#{appName}.yml")
-
-  #   if thinCmd.success?
-  #     @put.confirm
-  #   else
-  #     @put.error "Could not delete Thin configuration for #{appName}"
-  #     return
-  #   end
-
-  #   @apps[appName]["thin"] = false
-  #   saveData
-
-  # end
-
-  # #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  # def startNginx
-  #   @nginx.start
-  # end
-
-  # def stopNginx
-  #   @nginx.stop
-  # end
-
-  # # Relocating to Thin class
-
-  # def startThin(appName)
-  #   # @put.normal "Starting thin for #{appName}"
-  #   # command = @system.execute( "thin start -C /etc/thin/#{appName}.yml" )
-  #   # if command.success?
-  #   #   @put.confirm
-  #   # else
-  #   #   @put.error "Could not start Thin"
-  #   #   exit
-  #   # end
-  #   @thin.start(appName)
-  # end
-
-  # # Relocating to Thin class
-
-  # def stopThin(appName)
-  #   # @put.normal "Stopping thin for #{appName}"
-  #   # command = @system.execute( "thin stop -C /etc/thin/#{appName}.yml" )
-  #   # if command.success?
-  #   #   @put.confirm
-  #   # else
-  #   #   @put.error "Could not stop Thin"
-  #   #   exit
-  #   # end
-  #   @thin.stop(appName)
-  # end
-
-
-
-
 
   # def resetServers
   #   @put.normal "Restarting servers"
@@ -914,64 +1005,8 @@ class DeploymentActions
 
   # end
 
-  # #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  # # Sets new value in the apps hash
-  # #
-  # def setParameters(appName, newValues)
 
-  #   puts "appname = #{appName}"
-  #   puts "newValues = #{newValues}"
 
-  #   unless @apps.has_key?(appName)
-  #     @put.error "There is no application with the name '#{appName}'"
-  #     exit
-  #   end
-
-  #   # newValues = "url:www.me.com,ports:3"
-  #   newHash = newValues.split(',').inject(Hash.new{|h,k|h[k]=[]}) do |h, s|
-  #     k,v = s.split(':')
-  #     h[k] = v.to_i == 0 ? v : v.to_i
-  #     h
-  #   end
-
-  #   # puts newHash
-  #   @put.normal "Setting new values"
-
-  #   resetPorts = false
-
-  #   newHash.each {|key, value|
-  #     # @put.green "#{key} = #{value}"
-  #     @apps[appName][key] = value
-  #     if key == "ports"
-  #       resetPorts = true
-  #     end
-  #   }
-
-  #   # @apps[appName][key] = value
-  #   saveData
-
-  #   @put.confirm
-
-  #   if resetPorts
-  #     resetApplicationData
-  #     @put.normal "Warning: double-check the applications' ports and thin files."
-  #   end
-  #   # resetAll
-
-  # end
-
-  # #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  # # Deletes configuration files and stops the application
-  # #
-  # def disable(appName)
-  #   @nginx.stop
-  #   stopThin(appName)
-  #   deleteNginxConfigFile(appName)
-  #   deleteThinConfigFile(appName)
-  #   @nginx.start
-  #   @apps[appName]["online"] = false
-  #   saveData
-  # end
 
   # #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

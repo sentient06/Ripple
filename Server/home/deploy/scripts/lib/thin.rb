@@ -10,6 +10,9 @@ class Thin
     @thinPath = ENV["rvm_path"] + "/gems/" + ENV["RUBY_VERSION"] + "@ripple/bin/thin"
   end
 
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Starts Thin for an application
+  #
   def start(appName)
     @put.normal "Starting thin for #{appName}"
     command = @system.execute( "#{@thinPath} start -C /etc/thin/#{appName}.yml" )
@@ -21,6 +24,9 @@ class Thin
     end
   end
 
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Stops Thin for an application
+  #
   def stop(appName)
     @put.normal "Stopping thin for #{appName}"
     command = @system.execute( "#{@thinPath} stop -C /etc/thin/#{appName}.yml" )
@@ -33,7 +39,8 @@ class Thin
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  
+  # Saves Thin config file
+  #
   def saveConfigFile(app)
     appName  = app["name"]
     appPorts = app["ports"]
@@ -47,6 +54,27 @@ class Thin
       return 0
     else
       @put.error "Could not save Thin configuration for #{appName}"
+      return 1
+    end
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Deletes Thin config file
+  #
+  def deleteConfigFile(appName)
+    @put.normal "Removing Thin configuration for #{appName}"
+    configFile = "/etc/thin/#{appName}.yml"
+    if File.exists?(configFile)
+      removeCommand = @system.delete(configFile)
+      if removeCommand.success?
+        @put.confirm
+        return 0
+      else
+        @put.error "Could not delete Thin configuration"
+        return 1
+      end
+    else
+      @put.error "Config file non-existent"
       return 1
     end
   end

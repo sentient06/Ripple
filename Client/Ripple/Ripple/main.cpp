@@ -135,6 +135,8 @@ int main(int argc, const char * argv[]) {
             o.error("Unkown action");
         } else if (msg == "err2") {
             o.error("Missing argument");
+        } else if (msg == "err3") {
+            o.error("Can't parse command");
         } else {
             pigeon.post(msg.c_str(), debug);
         }
