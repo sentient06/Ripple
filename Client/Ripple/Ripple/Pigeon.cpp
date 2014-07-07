@@ -28,7 +28,7 @@ int Pigeon::post(const char msg[], bool debug) {
         }
         return 0;
     }
-    snprintf(fullCmd, 512, "ssh %s@%s \"%s %s %s\"", user, serverAddr.c_str(), action, trigger, msg);
+    snprintf(fullCmd, 512, "ssh -t %s@%s \"%s %s %s\"", user, serverAddr.c_str(), action, trigger, msg);
     if (debug) {
         o.debug(fullCmd);
     } else {

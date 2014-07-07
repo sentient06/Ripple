@@ -110,7 +110,8 @@ string App::parseActions(int argc, const char * argv[]) {
     if ( string(argv[1]) == "avail"   ) return avail(argv[0]);
     if ( string(argv[1]) == "deploy"  ) return deploy(argv[0]);
     if ( string(argv[1]) == "hinder"  ) return hinder(argv[0]);
-    if ( string(argv[1]) == "delete"  ) return remove(argv[0]);
+    if ( string(argv[1]) == "remove"  ) return remove(argv[0]);
+    if ( string(argv[1]) == "destroy" ) return destroy(argv[0]);
     return "err1";
 }
 
@@ -170,4 +171,20 @@ string App::hinder(const char app[]) {
 string App::remove(const char app[]) {
     snprintf(cmd, 512, "remove %s", app);
     return string(cmd);
+}
+string App::destroy(const char app[]) {
+    snprintf(cmd, 512, "destroy %s", app);
+    return string(cmd);
+}
+
+string App::allApps(const char action[]) {
+    if (string(action) == "stop"    ||
+        string(action) == "start"   ||
+        string(action) == "restart" ||
+        string(action) == "update"   ) {
+        snprintf(cmd, 512, "allApplications %s", action);
+        return string(cmd);
+    } else {
+        return "err1";
+    }
 }

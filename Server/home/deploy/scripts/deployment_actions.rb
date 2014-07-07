@@ -139,7 +139,7 @@ class DeploymentActions
   def loadData
     unless File.exists?(@dataFile)
       @apps = Hash.new
-      @put.static "List of apps unavailable."
+      @put.feedback "List of apps unavailable."
     else
       @apps = Marshal.load File.read(@dataFile)
     end
@@ -162,7 +162,7 @@ class DeploymentActions
   #
   def list
     if @apps.count < 1
-      @put.static "No applications found.\n"
+      @put.feedback "No applications found.\n"
       exit
     end
     # Iterate through all apps and print
@@ -216,6 +216,7 @@ class DeploymentActions
     # Create empty application:
     @apps[appName]               = Hash.new
     @apps[appName]["name"]       = appName
+    @apps[appName]["directory"]  = appName
     @apps[appName]["url"]        = appURL # application dns - Test with an array
     @apps[appName]["ports"]      = []     # thin ports
     @apps[appName]["repository"] = false  # repository created
@@ -418,16 +419,18 @@ class DeploymentActions
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Starts application
   #
-  def startApplication(appName)
+  def startApplication(appName, skipNginx = false)
     if @apps[appName]["online"]
-      @put.static "Application is already running"
+      @put.feedback "Application is already running"
       return
     end
     unless @apps[appName]['enabled']
-      @put.static "Please execute 'enable' command"
+      @put.feedback "Please execute 'enable' command"
       return
     end
-    @nginx.stop
+    unless skipNginx
+      @nginx.stop
+    end
     success = @thin.start(appName)
     unless success == 1
       @apps[appName]["enabled"] = true
@@ -435,12 +438,14 @@ class DeploymentActions
     else
       exit
     end
-    success = @nginx.start
-    unless success == 1
-      @apps[appName]["online"] = true
-      saveData
-    else
-      exit
+    unless skipNginx
+      success = @nginx.start
+      unless success == 1
+        @apps[appName]["online"] = true
+        saveData
+      else
+        exit
+      end
     end
   end
 
@@ -449,11 +454,11 @@ class DeploymentActions
   #
   def enable(appName)
     if @apps[appName]['enabled']
-      @put.static "Application is already enabled"
+      @put.feedback "Application is already enabled"
       return
     end
     unless @apps[appName]['available']
-      @put.static "Please execute 'avail' command"
+      @put.feedback "Please execute 'avail' command"
       return
     end
     @nginx.stop
@@ -468,7 +473,7 @@ class DeploymentActions
   #
   def avail(appName)
     if @apps[appName]['available']
-      @put.static "Application is already available"
+      @put.feedback "Application is already available"
       return
     end
     @nginx.availConfigFile(@apps[appName])
@@ -483,7 +488,7 @@ class DeploymentActions
   #
   def stopApplication(appName, skipNginx = false)
     unless @apps[appName]["online"]
-      @put.static "Application is already still"
+      @put.feedback "Application is already still"
       return
     end
     unless skipNginx
@@ -502,11 +507,11 @@ class DeploymentActions
   #
   def disable(appName)
     unless @apps[appName]['enabled']
-      @put.static "Application is already disabled"
+      @put.feedback "Application is already disabled"
       return
     end
     if @apps[appName]['online']
-      @put.static "Please execute 'stop' command"
+      @put.feedback "Please execute 'stop' command"
       return
     end
     @nginx.stop
@@ -521,11 +526,11 @@ class DeploymentActions
   #
   def hinder(appName)
     unless @apps[appName]['available']
-      @put.static "Application is already unavailable"
+      @put.feedback "Application is already unavailable"
       return
     end
     if @apps[appName]['enabled']
-      @put.static "Please execute 'disable' command"
+      @put.feedback "Please execute 'disable' command"
       return
     end
     @nginx.deleteConfigFile(appName)
@@ -533,6 +538,44 @@ class DeploymentActions
     @apps[appName]["available"] = false
     @apps[appName]["thin"] = false
     saveData
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Destroys application's repository and www directory
+  #
+  def destroy(appName)
+    unless @apps.has_key?(appName)
+      @put.error "There is no application with the name '#{appName}'"
+      return
+    end
+    if @apps[appName]['available']
+      @put.feedback "Please execute 'hinder' command"
+      return
+    end
+    @put.red "Destroying application '#{appName}'"
+    dir = "#{@productionFolder}#{appName}"
+    @put.normal "Removing #{dir}"
+    command = @system.deleteDir(dir)
+    unless command.success?
+      @put.error "Could not remove dir at path '#{dir}'"
+      @put.red @system.output
+      exit
+    else
+      @put.confirm
+    end
+    dir = "#{@repositoriesFolder}#{appName}"
+    @put.normal "Removing #{dir}"
+    command = @system.deleteDir(dir)
+    unless command.success?
+      @put.error "Could not remove dir at path '#{dir}'"
+      @put.red @system.output
+      exit
+    else
+      @put.confirm
+    end
+    @apps.delete(appName)
+    saveData
+    @put.red "Destroyed!"
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -682,6 +725,12 @@ class DeploymentActions
     print (@apps[appName]["update"] ? @red : @gre) 
     print !@apps[appName]["update"]
 
+    if @apps[appName]["directory"] != @apps[appName]["name"]
+      print "\n#{@ncl}Directory ........ "
+      print @yel
+      print @apps[appName]["directory"]
+    end
+
     print "#{@ncl}\n\n"
   end
 
@@ -736,7 +785,10 @@ class DeploymentActions
     toUpdate = @apps.select{|appName, keys|
       keys['update'] == true
     }
-    if toUpdate.count > 0
+    unless toUpdate.count > 0
+      @put.feedback "No applications to be updated"
+      return
+    else
       @put.normal "Stopping applications"
       @nginx.stop
     end
@@ -811,8 +863,9 @@ class DeploymentActions
         # @put.green "#{key} = #{value}"
         @apps[appName][key] = value
         if key == "ports"
-          #resetPorts = true
-          # @put.green "Port support is not implemented"
+          value.to_i.times do |i|
+            @apps[key]['ports'].push(0)
+          end
         end
       end
     }
@@ -831,6 +884,84 @@ class DeploymentActions
     # resetAll
 
   end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Trigger to stop nginx
+  #
+  def stopNginx
+    @put.feedback "All enabled applications will be offline!"
+    @nginx.stop
+    toUpdate = @apps.select{|appName, keys|
+      keys['enabled'] == true
+    }
+    toUpdate.each { |appName, keys|
+      @apps[appName]["online"] = false
+    }
+    saveData
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Trigger to start nginx
+  #
+  def startNginx
+    @put.feedback "All enabled applications will be online!"
+    @nginx.start
+    toUpdate = @apps.select{|appName, keys|
+      keys['enabled'] == true
+    }
+    toUpdate.each { |appName, keys|
+      @apps[appName]["online"] = true
+    }
+    saveData
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  def restartAll
+    @put.feedback "Restarting all"
+    @nginx.stop
+    stopAll(true)
+    startAll(true)
+    @nginx.start
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Stops all apps
+  #
+  def stopAll(skipNginx = false)
+    @put.feedback "Stopping all"
+    unless skipNginx
+      @nginx.stop
+    end
+    @apps.each {|key, value|
+      if value["online"]
+        stopApplication(key, true)
+      end
+    }
+    unless skipNginx
+      @nginx.start
+    end
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Starts all apps
+  #
+  def startAll(skipNginx = false)
+    @put.feedback "Starting all"
+    unless skipNginx
+      @nginx.stop
+    end
+    @apps.each {|key, value|
+      unless value["online"]
+        startApplication(key, true)
+        @apps[key]["online"] = true
+      end
+    }
+    unless skipNginx
+      @nginx.start
+    end
+    saveData
+  end
+
 
   # #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -916,98 +1047,7 @@ class DeploymentActions
 
   # end
 
-  # #---------------------------------------------------------------------------
-  # # Secondary methods
-
-
-
-
-  # def resetServers
-  #   @put.normal "Restarting servers"
-  #   stopServers
-  #   startServers
-  # end
-
-  # def stopServers
-
-  #   @nginx.stop
-  #   @put.normal "Stopping Thin"
-
-  #   # Iterates through all apps to stop server instances:
-
-  #   @apps.each {|key, value|
-  #     if value["online"]
-  #       command = @system.execute("thin stop -C /etc/thin/#{key}.yml")
-  #     end
-  #   }
-
-  # end
-
-  # def startServers
-
-  #   @put.normal "Starting servers"
-  #   @put.normal "Starting Thin"
-
-  #   @apps.each {|key, value|
-  #     if value["online"]
-  #       command = @system.execute( "thin start -C /etc/thin/#{key}.yml" )
-  #     end
-  #   }
-
-  #   @nginx.start
-
-  # end
-
-
-
-
-
-
-
-
-
-  
-
-  
-
-  # #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  # # Rewrites the config files and resets thin
-  # #
-  # def reset(appName)
-
-  #   if @apps[appName]["online"]
-  #     stopThin(appName)
-  #   end
-
-  #   deleteNginxConfigFile(appName)
-  #   deleteThinConfigFile(appName)
-  #   @thin.saveConfigFile(@apps[appName])
-  #   @nginx.availConfigFile(@apps[appName])
-  #   enableNginxConfigFile
-
-  #   if @apps[appName]["online"]
-  #     startThin(appName)
-  #   end
-
-  # end
-
-  # #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  # # Rewrites the config files and resets the servers
-  # #
-  # def resetAll
-
-  #   @nginx.stop
-  #   resetApplicationData
-  #   @apps.each {|key, value|
-  #       reset(key)
-  #   }
-  #   @nginx.start
-
-  # end
-
-
-
-
+ 
   # #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   # def destroydb
@@ -1034,5 +1074,45 @@ class DeploymentActions
   # #   system( "rm -rf #{@productionFolder}*" )
   # #   system( "rm -rf #{@productionFolder}*" )
   # # end
+
+
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # This is to update server-side information based on new code.
+  #
+  def masterUpdate
+    # Check for app directory entry
+    @apps.each {|key, value|
+        unless value.has_key?("name")
+          @put.cyan "Setting #{key} name"
+          @apps[key]["name"] = key
+        end
+        unless value.has_key?("directory")
+          @put.cyan "Setting #{key} directory"
+          @apps[key]["directory"] = key
+        end
+    }
+    saveData
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # This is to debug
+  #
+  def masterDebug
+    require 'pp'
+    generalDataFile = File.join(File.dirname(File.expand_path(__FILE__)), 'general.yml')
+    if File.exists?(generalDataFile)
+      generalData = YAML.load_file(generalDataFile)
+    else
+      @put.error "Unable to read general data file."
+      exit
+    end
+    gd = PP.pp(generalData,'',80)
+    ap = PP.pp(@apps,'',80)
+    @put.cyan "General data"
+    puts gd
+    @put.cyan "Apps data"
+    puts ap
+  end
 
 end

@@ -15,24 +15,60 @@ class Put
     @lastMsg = ''
   end
 
-  def static(msg)
-    puts "\n#{@cya}#{msg}#{@ncl}\n"
-  end
-
-  def normal(msg)
-    print "#{@yel} ->  #{msg}...#{@ncl}"
-    print "\r"
-    @lastMsg = msg
-  end
-
-  def confirm
-    puts "#{@gre}[ok] #{@lastMsg}.  #{@ncl}"
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Static texts
+  #
+  def red(msg)
+    puts "\n#{@red}#{msg}#{@ncl}\n"
   end
 
   def green(msg)
     puts "\n#{@gre}#{msg}#{@ncl}\n"
   end
 
+  def yellow(msg)
+    puts "\n#{@yel}#{msg}#{@ncl}\n"
+  end
+
+  def blue(msg)
+    puts "\n#{@blu}#{msg}#{@ncl}\n"
+  end
+
+  def purple(msg)
+    puts "\n#{@pur}#{msg}#{@ncl}\n"
+  end
+
+  def cyan(msg)
+    puts "\n#{@cya}#{msg}#{@ncl}\n"
+  end
+
+  def noColour(msg)
+    puts "\n#{@ncl}#{msg}#{@ncl}\n"
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Flexible
+  def static(msg)
+    cyan(msg)
+  end
+
+  def feedback(msg)
+    yellow("#{msg}\n")
+  end
+
+  # Saves message to update same line
+  def normal(msg)
+    print "#{@yel} ->  #{msg}...#{@ncl}"
+    print "\r"
+    @lastMsg = msg
+  end
+
+  # Updates normal output with success
+  def confirm
+    puts "#{@gre}[ok] #{@lastMsg}.  #{@ncl}"
+  end
+
+  # Updates normal output with error
   def error(msg)
     puts "\n#{@red}[Error] #{msg}!#{@ncl}\n"
   end

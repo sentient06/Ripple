@@ -31,7 +31,18 @@ if ARGV[0] == 'status'
 end
 # rp app <app> destroy # Destroys <app>
 if ARGV[0] == 'destroy'
-    deployer.destroy ARGV[1]
+    argv0 = ARGV.shift
+    argv1 = ARGV.shift
+    print "\n\033[0;31mAre you sure you want to destroy this application? \033[0;36m[yes|no]\033[0m: "
+    confirmation = gets.chomp
+    if confirmation == "yes"
+        print "\n\033[0;31mPlease type the name of the application to confirm\033[0m: "
+        name = gets.chomp
+        print "\n"
+        if argv1 == name
+            deployer.destroy(argv1)
+        end
+    end
 end
 # rp app <app> stop # Stops <app> from running
 if ARGV[0] == 'stop'
@@ -74,13 +85,41 @@ end
 # rp delete -a <app> # Removes an <app> from <server>
 # ---------------------------------------
 # rp nginx <command> # Executes <command> for nginx
+if ARGV[0] == 'nginx'
+    if ARGV[1] == 'stop'
+        deployer.stopNginx
+    elsif ARGV[1] == 'start'
+        deployer.startNginx
+    end
+end
 # rp thin <command> # Executes <command> for thin
 # ---------------------------------------
-# rp all <command>
-# rp all update
 if ARGV[0] == 'update'
-    deployer.deploy ARGV[1]
+    deployer.updateConfigs
 end
-# rp all stop
-# rp all restart
-# rp all 
+# rp all <command>
+if ARGV[0] == 'allApplications'
+    if ARGV[1] == 'stop'
+        # rp all stop
+        deployer.stopAll
+    elsif ARGV[1] == 'start'
+        # rp all start
+        deployer.startAll
+    elsif ARGV[1] == 'restart'
+        # rp all restart
+        deployer.restartAll
+    elsif ARGV[1] == 'update'
+        # rp all update
+        deployer.updateConfigs
+    end
+end
+
+# This is to update server-side information based on new code.
+if ARGV[0] == 'master-update'
+    deployer.masterUpdate
+end
+
+# This is to show the hashes.
+if ARGV[0] == 'master-debug'
+    deployer.masterDebug
+end

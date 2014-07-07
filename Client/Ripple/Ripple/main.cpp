@@ -84,6 +84,12 @@ int main(int argc, const char * argv[]) {
         else if ( string(argv[1]) == "server"  ) data.showServerName(argv[0]);
         else if ( string(argv[1]) == "test"    ) msg = "test";
         else if ( string(argv[1]) == "list"    ) msg = "list";
+
+        else if ( string(argv[1]) == "master-debug"  ||
+                  string(argv[1]) == "--mdb"          ) msg = "master-debug";
+        else if ( string(argv[1]) == "master-update" ||
+                  string(argv[1]) == "--mupd"         ) msg = "master-update";
+
         else msg = "err1";
     } else if ( argc == 3 ) {
              if ( string(argv[1]) == "help"    ) help.displayHelp(argv[0], argv[2]);
@@ -93,6 +99,7 @@ int main(int argc, const char * argv[]) {
         else if ( string(argv[1]) == "-t"      ) msg = server.thin(argv[2]);
         else if ( string(argv[1]) == "server" ||
                   string(argv[1]) == "-s"      ) server.parseAction(argc);
+        else if ( string(argv[1]) == "all"     ) msg = app.allApps(argv[2]);
         else if ( string(argv[1]) == "app"    ||
                   string(argv[1]) == "-a"     ||
                   string(argv[1]) == "."      ||

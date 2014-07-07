@@ -33,6 +33,8 @@ public:
     std::string deploy(const char app[]);
     std::string hinder(const char app[]);
     std::string remove(const char app[]);
+    std::string destroy(const char app[]);
+    std::string allApps(const char action[]);
 };
 
 #endif /* defined(__RipplePrototype__App__) */
