@@ -49,3 +49,46 @@ int Pigeon::checkOnlineServer(string serverAddr) {
     }
     return pclose(output);
 }
+
+int Pigeon::downloadFile(const char fileRemote[], const char fileLocal[], bool debug) {
+    Data d;
+    Output o;
+    string serverAddr = d.getServerName();
+    if (serverAddr.empty()) {
+        o.error("No server defined");
+        if (debug) {
+            o.debug("No command to be executed");
+        }
+        return 0;
+    }
+    snprintf(fullCmd, 512, "scp %s@%s:%s %s", user, serverAddr.c_str(), fileRemote, fileLocal);
+    if (debug) {
+        o.debug(fullCmd);
+    } else {
+        system((char *)fullCmd);
+    }
+    return 0;
+}
+int Pigeon::uploadFile(const char fileLocal[], const char fileRemote[], bool debug) {
+    Data d;
+    Output o;
+    string serverAddr = d.getServerName();
+    if (serverAddr.empty()) {
+        o.error("No server defined");
+        if (debug) {
+            o.debug("No command to be executed");
+        }
+        return 0;
+    }
+    snprintf(fullCmd, 512, "scp %s %s@%s:%s", fileLocal, user, serverAddr.c_str(), fileRemote);
+    if (debug) {
+        o.debug(fullCmd);
+    } else {
+        system((char *)fullCmd);
+    }
+    return 0;
+}
+// # download: remote -> local
+// scp user@remote_host:remote_file local_file 
+// # upload: local -> remote
+// scp local_file user@remote_host:remote_file

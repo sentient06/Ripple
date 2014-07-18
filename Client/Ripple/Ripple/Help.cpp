@@ -11,7 +11,7 @@
 #include "Output.h"
 
 using namespace std;
-
+const char Help::pur[11] = "\033[0;35m";
 const char Help::cya[11] = "\033[0;36m";
 const char Help::ncl[11] = "\033[0m"; //No colour
 
@@ -34,6 +34,12 @@ void Help::displayHelp(const char executable[], const char topic[]) {
         printf("  app    #  control application\n");
         printf("  add    #  creates a new application's repository and config files\n");
     }
+    if ( string(topic) == "master" ) {
+        printf("Available \"master\" commands:\n");
+        printf("  master-update | --mupd #  Update server-side info based on last code changes.\n");
+        printf("  master-debug  | --mdb  #  Show loaded information from YML and data files.\n");
+        printf("  --debug       | -db    #  Debugs current action. No triggers are activated.\n");
+    }
     if ( string(topic) == "help" ) {
         printf("Usage: %s help [topic]\n\n", executable);
         printf("Uh... Displays help. You just did it, by the way.\n");
@@ -51,7 +57,20 @@ void Help::displayHelp(const char executable[], const char topic[]) {
     }
     if ( string(topic) == "list"   ) {
         printf("Usage: %s list\n\n", executable);
-        printf("Lists the applications installed, their first Thin port number, number of servers used and URL.\n");
+        printf("Lists the applications installed. Output looks like this:\n");
+        printf("[AppName] - XXp | PPPP |  FLAGS  | URL\n");
+        printf("AppName . Application's name\n");
+        printf("XXp ..... Number of ports served by Thin, e.g 01p or 03p\n");
+        printf("PPPP .... First port served by Thin, e.g 3000, 3005\n");
+        printf("URL ..... Application's DNS'\n");
+        printf("These are the visible flags:\n");
+        printf("R ....... Repository\n");
+        printf("T ....... Thin configuration file (serving on port PPPP)\n");
+        printf("A ....... Nginx config file is Available\n");
+        printf("E ....... Nginx config file is Enabled (serving on port 80)\n");
+        printf("D ....... There is a Database\n");
+        printf("O ....... Application is online\n");
+        printf("U ....... Application is updated\n");
     }
     if ( string(topic) == "nginx" ||
          string(topic) == "-n"     ) {
@@ -67,12 +86,16 @@ void Help::displayHelp(const char executable[], const char topic[]) {
         printf("Usage: %s <app|-a|.> <action> [set options]\n\n", executable);
         printf("These are the primary options:\n\n");
         printf("  start   #  serves application\n");
-        printf("  stop    #  stops serving application\n");
+        printf("  enable  #  enables application's in Nginx\n");
+        printf("  avail   #  saves application config file in Nginx\n");
         printf("  restart #  restarts application\n");
-        printf("  enable  #  enables application's availability in Nginx\n");
-        printf("  disable #  stops serving and disables application's availability in Nginx\n");
-        printf("  destroy #  destroys application (application must be disabled)\n");
-        printf("  set     #  sets a value of <name>, <url> and <ports> parameters\n");
+        printf("  hinder  #  deletes application config file from Nginx\n");
+        printf("  disable #  disables application in Nginx\n");
+        printf("  stop    #  stops serving application through Thin\n");
+        printf("  destroy #  destroys application directory and repository\n");
+        printf("  set     #  sets name, ports and URL with values after colons.\n");
+        printf("             E.g: '%s . myApp set ports:2 url:mynewurl.com'\n", executable);
+
         //start|stop|restart|enable|disable|destroy|set
     }
     if ( string(topic) == "add"   ||

@@ -114,6 +114,22 @@ if ARGV[0] == 'allApplications'
     end
 end
 
+# rp app <app> [db|database] backup (local)
+# rp app <app> [db|database] backup copy ./test
+# rp app <app> [db|database] backup delete (local)
+# rp app <app> [db|database] backup restore (local)
+# rp app <app> [db|database] backup restore ./test
+
+if ARGV[0] == 'databaseBackup'
+    deployer.databaseBackup ARGV[1]
+end
+if ARGV[0] == 'databaseDelete'
+    deployer.databaseDelete ARGV[1]
+end
+if ARGV[0] == 'databaseRestore'
+    deployer.databaseRestore ARGV[1]
+end
+
 # This is to update server-side information based on new code.
 if ARGV[0] == 'master-update'
     deployer.masterUpdate

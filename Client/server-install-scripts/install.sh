@@ -71,7 +71,9 @@ stty echo
 echo "" # force a carriage return to be output
 echo "ALTER USER postgres WITH ENCRYPTED PASSWORD '${postgreSqlPass}';" | sudo -u postgres psql;
 # Replaces all "peer" for "md5":
-sudo sed -ie 's/\(^local *all *[a-z]* *\)peer/\1md5/' /etc/postgresql/9.1/main/pg_hba.conf
+# Line for postgres must remain peer
+# sudo sed -ie 's/\(^local *all *[a-z]* *\)peer/\1md5/' /etc/postgresql/9.1/main/pg_hba.conf
+sudo sed -ie 's/\(^local *all *all *\)peer/\1md5/' /etc/postgresql/9.1/main/pg_hba.conf
 sudo service postgresql restart
 printf "\n\n${cya}Installing Nginx${ncl}\n\n"
 sleep 3
@@ -137,11 +139,14 @@ sudo mkdir -p /ripple/master
 sudo mkdir -p /ripple/ripple.git
 sudo mkdir /home/git/repositories
 sudo mkdir /home/deploy/data
+sudo mkdir /ripple/backup
 sudo chown -R git:git /ripple
 sudo chown git:git /home/git/repositories
 sudo chown deploy:deploy /ripple/master
 sudo chown deploy:deploy /home/deploy/data
+sudo chown deploy:deploy /ripple/backup
 sudo chmod 775 /ripple/master
+sudo chmod 775 /ripple/backup
 cd /ripple/ripple.git
 sudo -u git git init --bare
 sudo rm -f /ripple/ripple.git/hooks/post-update

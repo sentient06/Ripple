@@ -19,6 +19,8 @@ class Pigeon {
 public:
     int post(const char msg[], bool debug);
     int checkOnlineServer(std::string serverAddr);
+    int downloadFile(const char fileRemote[], const char fileLocal[], bool debug);
+    int uploadFile(const char fileLocal[], const char fileRemote[], bool debug);
 };
 
 #endif /* defined(__RipplePrototype__Pigeon__) */

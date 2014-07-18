@@ -121,7 +121,7 @@ int main(int argc, const char * argv[]) {
                   string(argv[1]) == "+"       ) msg = app.add(argCount, arguments);
         else if ( string(argv[1]) == "app"    ||
                   string(argv[1]) == "-a"     ||
-                  string(argv[1]) == "."       ) msg = app.parseActions(argCount, arguments);
+                  string(argv[1]) == "."       ) msg = app.parseActions(argCount, arguments, debug);
         else msg = "err1";
     }
     
@@ -136,7 +136,9 @@ int main(int argc, const char * argv[]) {
     }
     
     if (!msg.empty()) {
-        if (msg == "err0") {
+        if (msg == "skip") {
+            // Skipping pigeon because it already did something.
+        } else if (msg == "err0") {
             return 0;
         } else if (msg == "err1") {
             o.error("Unkown action");

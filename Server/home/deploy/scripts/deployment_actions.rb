@@ -33,23 +33,19 @@
 # http://pub.cozmixng.org/~the-rwiki/rw-cgi.rb?cmd=view;name=RubyCodingConvention
 # http://www.caliban.org/ruby/rubyguide.shtml
 
-# Note: Check if Thin is in the Gemfile
-
+# @apps[appName]["name"]       # application name
+# @apps[appName]["directory"]  # application dir
 # @apps[appName]["url"]        # application dns
 # @apps[appName]["ports"]      # quantity of thin ports
-# @apps[appName]["first"]      # first port, from 3000
 # @apps[appName]["repository"] # repository created
 # @apps[appName]["thin"]       # thin configuration
 # @apps[appName]["available"]  # nginx available config
 # @apps[appName]["enabled"]    # nginx enabled config
 # @apps[appName]["db"]         # existing database
+# @apps[appName]["dbname"]     # database name
+# @apps[appName]["adapter"]    # database adapter
 # @apps[appName]["online"]     # servers on
-
-# List    - none
-# Create  - url, ports, first, repository
-# Deploy  - thin, available, enabled, db, online
-# Stop    - thin, available, enabled, db, online
-# Destroy - url, ports, first, repository
+# @apps[appName]["update"]     # must update thin and nginx files
 
 require 'erb'
 require 'yaml'
@@ -97,25 +93,15 @@ class DeploymentActions
     @bundlePath           = ENV["rvm_path"] + "/gems/" + ENV["RUBY_VERSION"] + "@global/bin/bundle"
     @rakePath             = ENV["rvm_path"] + "/rubies/" + ENV["RUBY_VERSION"] + "/bin/rake"
 
-    # print "@deployerUser         ->  #{@deployerUser}\n"
-    # print "@gitUser              ->  #{@gitUser}\n"
-    # print "@dataFile             ->  #{@dataFile}\n"
-    # print "@repositoriesFolder   ->  #{@repositoriesFolder}\n"
-    # print "@templatesFolder      ->  #{@templatesFolder}\n"
-    # print "@productionFolder     ->  #{@productionFolder}\n"
-    # print "@databaseYml          ->  #{@databaseYml}\n"
-    # print "@nginxAvailableFolder ->  #{@nginxAvailableFolder}\n"
-    # print "@nginxEnabledFolder   ->  #{@nginxEnabledFolder}\n"
-    # print "@rubyPath             ->  #{@rubyPath}\n"
-
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 
     @system   = System.new
+    @files    = Files.new(@productionFolder)
     @put      = Put.new
     @nginx    = Nginx.new(@templatesFolder, @nginxAvailableFolder, @nginxEnabledFolder)
     @thin     = Thin.new
     @git      = Git.new(@rubyPath, @gitUser, @repositoriesFolder, @productionFolder)
-    @database = Database.new
+    @database = Database.new(@productionFolder)
 
     loadData
 
@@ -129,9 +115,6 @@ class DeploymentActions
   end
 
   attr_reader :dataFile, :repositoriesFolder, :templatesFolder, :productionFolder, :databaseYml, :lastMsg, :apps, :rubyPath
-
-  #-------------------------------------------------------------------------------
-  # Data methods
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Loads application data
@@ -171,10 +154,12 @@ class DeploymentActions
     len    = bigKey.length
     print "\nList of applications\n--------------------\n"
     @apps.each {|key, value|
-      printf("#{@ncl} [#{@gre}%-#{len}s#{@ncl}] - #{@gre}%02d#{@ncl}p | #{@gre}%4d#{@ncl} | #{@pur}%s%s%s%s%s%s%s#{@ncl} | #{@gre}%s#{@ncl}\n",
+      printf("#{@ncl} [#{@gre}%-#{len}s#{@ncl}] - #{@gre}%02d#{@ncl}p | #{@gre}%4d#{@ncl} | DB: #{@gre}%s#{@ncl} | #{@pur}%s%s%s%s%s%s%s#{@ncl} | #{@gre}%s#{@ncl}\n",
           key.to_s,
           value['ports'].count,
           value['ports'][0],
+          value['adapter'] == "sqlite3"    ? "S3" :
+          value['adapter'] == "postgresql" ? "PG" : "--",
           value["repository"] ? "R" : "-",
           value["thin"]       ? "T" : "-",
           value["available"]  ? "A" : "-",
@@ -224,6 +209,8 @@ class DeploymentActions
     @apps[appName]["available"]  = false  # nginx available config
     @apps[appName]["enabled"]    = false  # nginx enabled config
     @apps[appName]["db"]         = false  # existing database
+    @apps[appName]["dbname"]     = nil    # database name
+    @apps[appName]["adapter"]    = nil    # database adapter
     @apps[appName]["online"]     = false  # online
     @apps[appName]["update"]     = true   # must update thin and nginx files
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -394,6 +381,11 @@ class DeploymentActions
     #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # If all is fine, start thin and nginx.
 
+    unless @files.findGemForApp('thin', appName)
+      @put.error "Thin is missing from the Gemfile"
+      exit
+    end
+
     @nginx.stop
 
     success = @nginx.enableConfigFile(appName)
@@ -563,9 +555,9 @@ class DeploymentActions
     else
       @put.confirm
     end
-    dir = "#{@repositoriesFolder}#{appName}"
+    dir = "#{@repositoriesFolder}#{appName}.git"
     @put.normal "Removing #{dir}"
-    command = @system.deleteDir(dir)
+    command = @git.deleteRepositoryDirectory(appName)
     unless command.success?
       @put.error "Could not remove dir at path '#{dir}'"
       @put.red @system.output
@@ -592,7 +584,9 @@ class DeploymentActions
       @put.error "Database file does not exist"
       exit
     end
+    
     dbDetails = YAML.load_file(dbConfigFile)
+    @put.confirm
 
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
     # Load information:
@@ -607,19 +601,35 @@ class DeploymentActions
     end
 
     dbAdapter = productionDB['adapter']
+    @apps[appName]["adapter"] = dbAdapter
 
     # If this is a SQLite 3, accept it:
     if dbAdapter == "sqlite3"
       @put.green "Sqlite3 detected!"
-      @apps[appName]["db"] = true
+      if @files.findGemForApp('sqlite3', appName)
+        @apps[appName]["db"] = true
+      else
+        @put.error "SQLite (sqlite3) is missing from the Gemfile"
+        exit
+      end
       saveData
       return
     end
+
+    if @files.findGemForApp('pg', appName)
+      @apps[appName]["db"] = true
+    else
+      @put.error "Postgres (pg) is missing from the Gemfile"
+      exit
+    end
+    saveData
 
     # If PostgreSQL, go on:
     dbName = productionDB['database']
     dbUser = productionDB['username']
     dbPass = productionDB['password']
+
+    @apps[appName]["dbname"] = dbName
 
     if dbPass.nil?
       @put.error "No password, ignoring database"
@@ -641,7 +651,7 @@ class DeploymentActions
       @put.green "User registered."
     else
       @put.green "No user defined."
-      @put.normal "Creating new user '#{dbUser}'"
+      @put.yellow "Creating new user '#{dbUser}'"
 
       newUser = @database.addUser(dbUser, dbPass)
 
@@ -717,6 +727,14 @@ class DeploymentActions
     print (@apps[appName]["db"] ? @gre : @red)
     print  @apps[appName]["db"]
 
+    print "\n#{@ncl}Adapter .......... "
+    if @apps[appName]["adapter"].nil?
+      print "#{@red}none"
+    else
+      print @gre
+      print @apps[appName]["adapter"]
+    end
+
     print "\n#{@ncl}Online ........... "
     print (@apps[appName]["online"] ? @gre : @red)
     print  @apps[appName]["online"]
@@ -758,20 +776,23 @@ class DeploymentActions
     print "#{@cya}Executing system commands#{@ncl}\n"
     print "#{@cya}-------------------------#{@ncl}\n"
    
-    print "whoami ............... "
+    print "whoami .................. "
     system("whoami")
 
-    print "sudo -u git whoami ... "
+    print "sudo -u git whoami ...... "
     system("sudo -u git whoami")
 
-    print "ruby -v .............. "
+    print "sudo -u postgres whoami . "
+    system("sudo -u postgres whoami")
+
+    print "ruby -v ................. "
     system("#{@rubyPath} -v")
 
-    print "thin -v .............. " # y u not work!?
-    system("#{@thinPath} -v")
-    print "\n"
+    # print "thin -v ................. " # y u not work!?
+    # system("#{@thinPath} -v")
+    # print "\n"
 
-    print "bundle -v ............ "
+    print "bundle -v ............... "
     system("#{@bundlePath} -v")
 
     print "\n"
@@ -823,13 +844,6 @@ class DeploymentActions
     saveData
   end
 
-  # def set(arguments)
-  #   arguments.each do|a|
-  #     puts "Argument: #{a}"
-  #   end
-  # end
-
-
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Sets new value in the apps hash
   #
@@ -870,18 +884,9 @@ class DeploymentActions
       end
     }
 
-    # @apps[appName][key] = value
     saveData
-
     @put.confirm
-
     appStatus(appName)
-
-    # if resetPorts
-      # resetApplicationData
-      # @put.normal "Warning: double-check the applications' ports and thin files."
-    # end
-    # resetAll
 
   end
 
@@ -916,6 +921,8 @@ class DeploymentActions
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Restarts all applications
+  #
   def restartAll
     @put.feedback "Restarting all"
     @nginx.stop
@@ -962,6 +969,38 @@ class DeploymentActions
     saveData
   end
 
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Creates a backup of a database
+  #  
+  def databaseBackup(appName)
+    @put.static "Creating database backup for #{appName}"
+    if @apps[appName]['db']
+      if @apps[appName]['adapter'] == "sqlite3"
+        @database.sqlite3Dump(appName)
+      elsif @apps[appName]['adapter'] == "postgresql"
+        @database.sqlDump(appName, @apps[appName]['dbname'])
+      end
+    end
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Deletes PG database
+  #  
+  def databaseDelete(appName)
+    @put.red "databaseDelete not implemented yet"
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Restores database
+  #  
+  def databaseRestore(appName)
+    @put.static "Restoring database for #{appName}"
+    if @apps[appName]['adapter'] == "sqlite3"
+      @database.sqlite3Restore(appName)
+    elsif @apps[appName]['adapter'] == "postgresql"
+      @database.sqlRestore(appName, @apps[appName]['dbname'])
+    end
+  end
 
   # #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -992,65 +1031,6 @@ class DeploymentActions
   #     }    
   #   end
   #   @apps[appName]['ports'] = newPorts
-  # end
-
-  # #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  # def resetApplicationData
-
-  #   port = 3000
-
-  #   @put.normal "Setting ports"
-  #   thinConfigChange = Array.new
-  #   nginxConfigChange = Array.new
-
-  #   # Iterates through all apps to store correct ports:
-  #   @apps.each {|key, value|
-  #     value["ports"].times do |i|
-  #       print "\r"
-  #       if i == 0
-          
-  #         if value["first"] != port
-  #           value["first"] = port
-  #           if value["thin"] == true
-  #             thinConfigChange.push(value['name'])
-  #           end
-  #           if value["available"] == true
-  #             nginxConfigChange.push(value['name'])
-  #           end
-  #         end
-
-  #       end
-  #       # puts "#{@gre} - Port #{port} - #{key}#{@ncl}"
-  #       port += 1
-  #     end
-  #   }
-
-  #   @put.confirm
-  #   saveData
-
-  #   return
-
-  #   # to test:
-
-  #   if thinConfigChange.length > 0
-  #     thinConfigChange.each { |app|
-  #       @thin.saveConfigFile(@apps[app])
-  #     }
-  #   end
-
-  #   if nginxConfigChange.length > 0
-  #     nginxConfigChange.each { |app|
-  #       @nginx.availConfigFile(@apps[app])
-  #     }
-  #   end
-
-  # end
-
- 
-  # #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  # def destroydb
   # end
 
   # #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1091,7 +1071,37 @@ class DeploymentActions
           @put.cyan "Setting #{key} directory"
           @apps[key]["directory"] = key
         end
+        unless value.has_key?("adapter")
+          @put.cyan "Setting #{key} adapter"
+          @apps[key]["adapter"] = nil
+        end
+        unless value.has_key?("dbname")
+          @put.cyan "Setting #{key} dbname"
+          @apps[key]["dbname"] = nil
+        end
     }
+
+    @put.static "Fixing database information"
+    @apps.each {|appName, value|
+      @put.static "Checking '#{appName}'"
+      dbConfigFile = "#{@productionFolder}#{appName}#{@databaseYml}"
+      unless File.exists?(dbConfigFile)
+        @put.error "Database file does not exist for #{appName}"
+        return
+      end
+      dbDetails = YAML.load_file(dbConfigFile)
+      productionDB = dbDetails['production']
+      if productionDB.nil?
+        @put.green "Nothing to do with the database for #{appName}"
+        return
+      end
+      puts productionDB
+      @apps[appName]["adapter"] = productionDB['adapter']
+      unless productionDB['adapter'] == "sqlite3"
+        @apps[appName]["dbname"] = productionDB['database']
+      end
+    }
+
     saveData
   end
 

@@ -13,6 +13,9 @@ class Git
     @productionFolder   = productionFolder
   end
 
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Creates application's repository directory
+  #
   def createRepositoryDirectory(appName)
     repositoryFolder = "#{@repositoriesFolder}#{appName}.git"
 
@@ -33,6 +36,14 @@ class Git
       @put.error "sudo -u #{@gitUser} mkdir #{repositoryFolder}"
       return 1
     end
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Deletes application's repository directory
+  #
+  def deleteRepositoryDirectory(appName)
+    repositoryFolder = "#{@repositoriesFolder}#{appName}.git"
+    deleteFolder = @system.execute("sudo -u #{@gitUser} rm -rf #{repositoryFolder}")
   end
 
   def createBareRepository(repositoryFolder, appName)

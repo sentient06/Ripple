@@ -21,8 +21,9 @@ class App {
 public:
     App();
     std::string add(int argc, const char * argv[]);
-    std::string parseActions(int argc, const char * argv[]);
+    std::string parseActions(int argc, const char * argv[], bool debug);
     std::string set(int argc, const char * argv[]);
+    std::string database(int argc, const char * argv[], bool debug);
     std::string status(const char app[]);
     std::string start(const char app[]);
     std::string stop(const char app[]);

@@ -12,6 +12,7 @@
 #include <iostream>
 
 class Help {
+    static const char pur[11];
     static const char cya[11];
     static const char ncl[11];
 public:
