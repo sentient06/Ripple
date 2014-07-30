@@ -1,5 +1,5 @@
 # deployment_actions.rb
-# Ruby Deployment for Humans
+# Ripple
 #
 # Created by Giancarlo Mariot on 02/01/2013.
 # Copyright (c) 2012 Giancarlo Mariot. All rights reserved.
@@ -44,11 +44,13 @@
 # @apps[appName]["db"]         # existing database
 # @apps[appName]["dbname"]     # database name
 # @apps[appName]["adapter"]    # database adapter
+# @apps[appName]["backup"]     # database last backup date
 # @apps[appName]["online"]     # servers on
 # @apps[appName]["update"]     # must update thin and nginx files
 
 require 'erb'
 require 'yaml'
+require 'date'
 
 Dir[File.dirname(__FILE__) + '/lib/*.rb'].each {|file| require file }
 
@@ -211,6 +213,7 @@ class DeploymentActions
     @apps[appName]["db"]         = false  # existing database
     @apps[appName]["dbname"]     = nil    # database name
     @apps[appName]["adapter"]    = nil    # database adapter
+    @apps[appName]["backup"]     = nil    # database last backup date
     @apps[appName]["online"]     = false  # online
     @apps[appName]["update"]     = true   # must update thin and nginx files
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
@@ -230,9 +233,16 @@ class DeploymentActions
       exit
     end
     @put.green "Your application's repository is ready."
+    showGitRemote(appName)
+    print "\n"
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Echoes the git remote line
+  #
+  def showGitRemote(appName)
     @put.green "Please add the remote address:"
     @put.static "git remote add #{@server} git@#{@server}:repositories/#{appName}.git"
-    print "\n"
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -352,7 +362,8 @@ class DeploymentActions
       if migrationsNumber > 0
         @put.static "#{migrationsNumber} migrations found."
         @put.normal "Migrating"
-        migrations = @system.execute("RAILS_ENV=production #{@rakePath} db:migrate")
+        # def execute(command, inPath = "", showOutput = false, user = "")
+        migrations = @system.execute("RAILS_ENV=production #{@rakePath} db:migrate", "", true)
         if migrations.success?
           @put.confirm
         else
@@ -644,7 +655,7 @@ class DeploymentActions
     # Checking user:
 
     @put.normal "Checking DB user existence"
-    userExistent = @database.findUser(dbUser)
+    userExistent = @database.findUserPG(dbUser)
     @put.confirm
 
     if userExistent
@@ -653,7 +664,7 @@ class DeploymentActions
       @put.green "No user defined."
       @put.yellow "Creating new user '#{dbUser}'"
 
-      newUser = @database.addUser(dbUser, dbPass)
+      newUser = @database.addUserPG(dbUser, dbPass)
 
       unless newUser
         @put.error "Unable to create DB user"
@@ -668,14 +679,14 @@ class DeploymentActions
     # Checking database:
 
     @put.normal "Checking database existence"
-    dbExists = @database.findDb(dbName)
+    dbExists = @database.findPG(dbName)
 
     if dbExists
       @put.confirm
     else
       @put.green "No database defined."
       @put.normal "Creating new database"
-      newDB = @database.addDb(dbUser, dbName)
+      newDB = @database.addPG(dbUser, dbName)
       if newDB
         dbExists = true
         @put.confirm
@@ -696,6 +707,12 @@ class DeploymentActions
   # Prints details about a given application.
   #
   def appStatus(appName)
+
+    if @apps[appName].nil?
+      @put.error "There is no application with that name"
+      return
+    end    
+
     print "\n#{@gre}#{appName.capitalize} application's details\n"
     puts '-' * (appName.length + 22)
 
@@ -733,6 +750,14 @@ class DeploymentActions
     else
       print @gre
       print @apps[appName]["adapter"]
+    end
+
+    print "\n#{@ncl}DB backup ........ "
+    if @apps[appName]["backup"].nil?
+      print "#{@red}none"
+    else
+      print @gre
+      print @apps[appName]["backup"].strftime("%d/%m/%Y")
     end
 
     print "\n#{@ncl}Online ........... "
@@ -973,32 +998,154 @@ class DeploymentActions
   # Creates a backup of a database
   #  
   def databaseBackup(appName)
-    @put.static "Creating database backup for #{appName}"
+    @put.normal "Creating database backup for #{appName}"
     if @apps[appName]['db']
       if @apps[appName]['adapter'] == "sqlite3"
-        @database.sqlite3Dump(appName)
+        success = @database.dumpS3(appName)
       elsif @apps[appName]['adapter'] == "postgresql"
-        @database.sqlDump(appName, @apps[appName]['dbname'])
+        success = @database.dumpPG(appName, @apps[appName]['dbname'])
+      end
+      unless success
+        @put.error "Could not create backup"
+      else
+        @apps[appName]['backup'] = DateTime.now
+        saveData
+        @put.confirm
       end
     end
+  end
+
+  #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # Transfers a backup of a database that was uploaded from client
+  #  
+  def moveBackup(appName)
+    @put.normal "Moving database backup file for #{appName}"
+    # if @apps[appName]['db']
+      success = @database.transferDB(appName)
+      unless success
+        @put.error "Could not move backup"
+      else
+        @apps[appName]['backup'] = DateTime.now
+        saveData
+        @put.confirm
+      end
+    # end
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Deletes PG database
   #  
   def databaseDelete(appName)
-    @put.red "databaseDelete not implemented yet"
+    if @apps[appName]['enabled']
+      @put.feedback "Please execute 'disable' command"
+      return
+    end
+    # if @apps[appName]['db']
+      if @apps[appName]['adapter'] == "sqlite3"
+        success = @database.deleteS3(appName)
+      elsif @apps[appName]['adapter'] == "postgresql"
+        dbConfigFile = "#{@productionFolder}#{appName}#{@databaseYml}"    
+        dbDetails = YAML.load_file(dbConfigFile)
+        dbUser = dbDetails['production']['username']
+        @put.normal "Deleting database for #{appName}"
+        success = @database.deletePG(appName, @apps[appName]['dbname'], dbUser)
+      end
+      if success
+        @apps[appName]['db'] = false
+        saveData
+        @put.confirm
+      else
+        @put.error "Couldn't delete database"
+      end
+    # end
+
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   # Restores database
   #  
   def databaseRestore(appName)
-    @put.static "Restoring database for #{appName}"
     if @apps[appName]['adapter'] == "sqlite3"
-      @database.sqlite3Restore(appName)
+      success = @database.restoreS3(appName)
     elsif @apps[appName]['adapter'] == "postgresql"
-      @database.sqlRestore(appName, @apps[appName]['dbname'])
+      @put.normal "Reading DB file"
+      dbConfigFile = "#{@productionFolder}#{appName}#{@databaseYml}"    
+      dbDetails = YAML.load_file(dbConfigFile)
+      dbName = dbDetails['production']['database']
+      dbUser = dbDetails['production']['username']
+      dbPass = dbDetails['production']['password']
+      @put.confirm
+      # @put.normal "Adding user"
+
+      # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+      # Checking user:
+
+      @put.normal "Checking DB user existence"
+      userExistent = @database.findUserPG(dbUser)
+      @put.confirm
+      if userExistent
+        @put.green "User registered."
+      else
+        @put.green "No user defined."
+        @put.yellow "Creating new user '#{dbUser}'"
+        newUser = @database.addUserPG(dbUser, dbPass)
+        unless newUser
+          @put.error "Unable to create DB user"
+          exit
+        else
+          userExistent = true
+          @put.confirm
+        end
+      end
+
+      # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+      # Checking database:
+
+      @put.normal "Checking database existence"
+      dbExists = @database.findPG(dbName)
+      if dbExists
+        @put.confirm
+      else
+        @put.green "No database defined."
+        @put.normal "Creating new database"
+        newDB = @database.addPG(dbUser, dbName)
+        if newDB
+          dbExists = true
+          @put.confirm
+        else
+          @put.error "Unable to create database"
+          exit
+        end
+      end
+      # if userExistent && dbExists
+      #   @apps[appName]["db"] = true
+      #   saveData
+      # end
+    # end
+
+
+
+
+
+      # if @database.addUserPG(dbUser, dbPass)
+        # @put.confirm
+        # @put.normal "Adding database"
+        # if @database.addPG(dbUser, dbName)
+          # @put.confirm
+          @put.normal "Restoring database for #{appName}"
+          if @database.restorePG(appName, dbName)
+            @apps[appName]['db'] = true
+            saveData
+            @put.confirm
+          else
+            @put.error "Couldn't restore database"
+          end
+        # else
+          # @put.error "Couldn't add database"
+        # end
+      # else
+        # @put.error "Couldn't add database user"
+      # end
     end
   end
 
@@ -1099,6 +1246,14 @@ class DeploymentActions
       @apps[appName]["adapter"] = productionDB['adapter']
       unless productionDB['adapter'] == "sqlite3"
         @apps[appName]["dbname"] = productionDB['database']
+      end
+    }
+
+    @apps.each {|appName, value|
+      @put.static "Checking '#{appName}'"
+      unless value.has_key?("backup")
+        @put.cyan "Setting #{appName} backup"
+        @apps[appName]["backup"] = nil
       end
     }
 

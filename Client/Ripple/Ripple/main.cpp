@@ -102,8 +102,8 @@ int main(int argc, const char * argv[]) {
         else if ( string(argv[1]) == "all"     ) msg = app.allApps(argv[2]);
         else if ( string(argv[1]) == "app"    ||
                   string(argv[1]) == "-a"     ||
-                  string(argv[1]) == "."      ||
-                  string(argv[1]) == "add"    ||
+                  string(argv[1]) == "."       ) msg = app.status(argv[2]);
+        else if ( string(argv[1]) == "add"    ||
                   string(argv[1]) == "+"       ) msg = "err2";
         else msg = "err1";
     } else if ( argc > 3 ) {

@@ -1,4 +1,4 @@
-# Ruby Deployment for Humans
+# Ripple
 # Copyright (c) 2012 Giancarlo Mariot. All rights reserved.
 #------------------------------------------------------------------------------
 
@@ -12,11 +12,15 @@ class System
   
   # Returns a process object.
   # $? -> process, i.e #<Process::Status: pid 1612 exit 0>
-  def execute(command, inPath = "", showOutput = false)
+  def execute(command, inPath = "", showOutput = false, user = "")
+    su = ""
+    unless su == ""
+      su = "sudo -u #{user} "
+    end
     if inPath != ""
       Dir.chdir "#{inPath}"
     end
-    @output = `#{command} 2>&1`
+    @output = `#{su}#{command} 2>&1`
     if showOutput
       puts @output
     end

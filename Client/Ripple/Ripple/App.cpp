@@ -106,6 +106,7 @@ string App::parseActions(int argc, const char * argv[], bool debug) {
     if ( string(argv[1]) == "db"      ||
          string(argv[1]) == "database" ) return database(argc, argv, debug);
 
+    if ( string(argv[1]) == "git"      ) return git(argv[0]);
     if ( string(argv[1]) == "status"   ) return status(argv[0]);
     if ( string(argv[1]) == "start"    ) return start(argv[0]);
     if ( string(argv[1]) == "stop"     ) return stop(argv[0]);
@@ -140,34 +141,76 @@ string App::set(int argc, const char * argv[]) {
 }
 string App::database(int argc, const char * argv[], bool debug) {
     char cmd[512];
-    char remoteFile[512];
+    char remoteDownloadFile[512];
+    char remoteUploadFile[512];
     Pigeon p;
 
-    if (argc == 3) {
+    if (argc < 3) {
+        return "err2";
+    } else if (argc == 3) {
+
+        if (debug)
+            cout << "ARGC 3 for database method" << endl;
+
         // Server-only actions
         if ( string(argv[2]) == "backup" ) {
             // Plain backup
             snprintf(cmd, 512, "databaseBackup %s", argv[0]);
             return string(cmd);
+        } else if ( string(argv[2]) == "delete" ) {
+            snprintf(cmd, 512, "databaseDelete %s", argv[0]);
+            return string(cmd);
+        } else if ( string(argv[2]) == "restore" ) {
+            snprintf(cmd, 512, "databaseRestore %s", argv[0]);
+            return string(cmd);
+        } else if ( string(argv[2]) == "copy" ) {
+            snprintf(remoteDownloadFile, 512, "/ripple/backup/%s.gz", argv[0]);                
+            snprintf(cmd, 512, "databaseBackup %s", argv[0]);
+            p.post(cmd, debug);
+            p.downloadFile(remoteDownloadFile, "~/Desktop/", debug);
+            return "skip";
+        } else if ( string(argv[2]) == "deploy" ) {
+            snprintf(cmd, 512, "deployDatabase %s", argv[0]);
+            return string(cmd);
         }
     } else if (argc == 4) {
+
+        if (debug)
+            cout << "ARGC 4 for database method" << endl;
+
         // Server-only actions
-        if ( string(argv[2]) == "backup" ) {
-            if ( string(argv[3]) == "delete" ) {
+        // if ( string(argv[2]) == "backup" ) {
+            snprintf(remoteDownloadFile, 512, "/ripple/backup/%s.gz", argv[0]);
+            snprintf(remoteUploadFile, 512, "/home/bot/backup/%s.gz", argv[0]);
+            if ( string(argv[2]) == "delete" ) {
                 snprintf(cmd, 512, "databaseDelete %s", argv[0]);
                 return string(cmd);
-            } else if ( string(argv[3]) == "restore" ) {
+            } else if ( string(argv[2]) == "restore" ) {
+                p.uploadFile(argv[3], remoteUploadFile, debug);
+                p.chmodFile("774", remoteUploadFile, debug);
+                p.chgrpFile("deploy", remoteUploadFile, debug);
                 snprintf(cmd, 512, "databaseRestore %s", argv[0]);
                 return string(cmd);
-            } else if ( string(argv[3]) == "copy" ) {
-                snprintf(remoteFile, 512, "/ripple/backup/%s.gz", argv[0]);                
+            } else if ( string(argv[2]) == "add" ) {
+                p.uploadFile(argv[3], remoteUploadFile, debug);
+                p.chmodFile("774", remoteUploadFile, debug);
+                p.chgrpFile("deploy", remoteUploadFile, debug);
+                snprintf(cmd, 512, "moveBackup %s", argv[0]);
+                return string(cmd);
+            } else if ( string(argv[2]) == "copy" ) {
                 snprintf(cmd, 512, "databaseBackup %s", argv[0]);
                 p.post(cmd, debug);
-                p.downloadFile(remoteFile, "~/Desktop/", debug);
+                p.downloadFile(remoteDownloadFile, argv[3], debug);
                 return "skip";
             }
-        }
-    } else if (argc > 4) {
+        // }
+    }
+    /*
+    else if (argc > 4) {
+
+        if (debug)
+            cout << "ARGC > 4 for database method" << endl;
+
         // Server+client actions
         if ( string(argv[2]) == "backup" ) {
             snprintf(remoteFile, 512, "/ripple/backup/%s.gz", argv[0]);                
@@ -180,10 +223,20 @@ string App::database(int argc, const char * argv[], bool debug) {
                 p.uploadFile(argv[4], remoteFile, debug);
                 snprintf(cmd, 512, "databaseRestore %s", argv[0]);
                 return string(cmd);
+            } else if ( string(argv[3]) == "add" ) {
+                snprintf(remoteFile, 512, "/ripple/backup/%s.gz", argv[0]);                
+                p.uploadFile(argv[4], remoteFile, debug);
+                snprintf(cmd, 512, "transferBackup %s", argv[0]);
+                return string(cmd);
             }
         }
     }
+    */
     return "err1";
+}
+string App::git(const char app[]) {
+    snprintf(cmd, 512, "git %s", app);
+    return string(cmd);
 }
 string App::status(const char app[]) {
     snprintf(cmd, 512, "status %s", app);

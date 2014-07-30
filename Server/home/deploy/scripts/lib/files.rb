@@ -6,6 +6,7 @@ class Files
 
   def initialize(productionFolder)
     @productionFolder = productionFolder
+    @system = System.new
   end
 
   def parseGemfile(filePath)
@@ -42,5 +43,13 @@ class Files
     g = parseGemfile(f)
     g.include? gemName
   end
+
+  # def mv(originPath, destinyPath)
+  #   @system.execute "mv #{originPath} #{destinyPath}"
+  # end
+
+  # def chown(filePath, user)
+  #   @system.execute "chmod #{user}:#{user} #{filePath}"
+  # end
 
 end

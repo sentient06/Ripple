@@ -88,6 +88,46 @@ int Pigeon::uploadFile(const char fileLocal[], const char fileRemote[], bool deb
     }
     return 0;
 }
+int Pigeon::chmodFile(const char permission[], const char fileRemote[], bool debug) {
+    Data d;
+    Output o;
+    string serverAddr = d.getServerName();
+    if (serverAddr.empty()) {
+        o.error("No server defined");
+        if (debug) {
+            o.debug("No command to be executed");
+        }
+        return 0;
+    }
+    snprintf(fullCmd, 512, "ssh %s@%s chmod %s %s", user, serverAddr.c_str(), permission, fileRemote);
+    if (debug) {
+        o.debug(fullCmd);
+    } else {
+        system((char *)fullCmd);
+    }
+    return 0;
+}
+int Pigeon::chgrpFile(const char group[], const char fileRemote[], bool debug) {
+    Data d;
+    Output o;
+    string serverAddr = d.getServerName();
+    if (serverAddr.empty()) {
+        o.error("No server defined");
+        if (debug) {
+            o.debug("No command to be executed");
+        }
+        return 0;
+    }
+    snprintf(fullCmd, 512, "ssh %s@%s chgrp %s %s", user, serverAddr.c_str(), group, fileRemote);
+    if (debug) {
+        o.debug(fullCmd);
+    } else {
+        system((char *)fullCmd);
+    }
+    return 0;
+}
+
+// ssh bot@ubuntu chmod 774 /home/bot/backup/blog.gz
 // # download: remote -> local
 // scp user@remote_host:remote_file local_file 
 // # upload: local -> remote

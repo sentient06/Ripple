@@ -24,6 +24,7 @@ public:
     std::string parseActions(int argc, const char * argv[], bool debug);
     std::string set(int argc, const char * argv[]);
     std::string database(int argc, const char * argv[], bool debug);
+    std::string git(const char app[]);
     std::string status(const char app[]);
     std::string start(const char app[]);
     std::string stop(const char app[]);

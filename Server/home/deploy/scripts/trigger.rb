@@ -38,7 +38,7 @@ if ARGV[0] == 'destroy'
     if confirmation == "yes"
         print "\n\033[0;31mPlease type the name of the application to confirm\033[0m: "
         name = gets.chomp
-        print "\n"
+        # print "\n"
         if argv1 == name
             deployer.destroy(argv1)
         end
@@ -114,20 +114,59 @@ if ARGV[0] == 'allApplications'
     end
 end
 
-# rp app <app> [db|database] backup (local)
-# rp app <app> [db|database] backup copy ./test
-# rp app <app> [db|database] backup delete (local)
-# rp app <app> [db|database] backup restore (local)
-# rp app <app> [db|database] backup restore ./test
+#***************************************************
 
+# rp app <app> [db|database] delete
+if ARGV[0] == 'databaseDelete'
+    argv0 = ARGV.shift
+    argv1 = ARGV.shift
+    print "\n\033[0;31mAre you sure you want to delete the database? \033[0;36m[yes|no]\033[0m: "
+    confirmation = gets.chomp
+    if confirmation == "yes"
+        print "\n\033[0;31mPlease type the name of the application to confirm\033[0m: "
+        name = gets.chomp
+        # print "\n"
+        if argv1 == name
+            deployer.databaseDelete(argv1)
+        end
+    end
+end
+
+# rp app <app> [db|database] restore [path]
+if ARGV[0] == 'databaseRestore'
+    deployer.databaseRestore ARGV[1]
+end
+
+# rp app <app> [db|database] backup
+# rp app <app> [db|database] copy [path] # then it downloads the file
 if ARGV[0] == 'databaseBackup'
     deployer.databaseBackup ARGV[1]
 end
-if ARGV[0] == 'databaseDelete'
-    deployer.databaseDelete ARGV[1]
+
+# rp app <app> [db|database] add <path>
+if ARGV[0] == 'moveBackup'
+    appName = ARGV[1]
+    origin  = "/home/bot/backup/#{appName}.gz"
+    if File.exists?(origin)
+        success = `chmod 777 #{origin} 2>&1`
+    end
+    if success
+        deployer.moveBackup ARGV[1]
+    else
+        print "\n\033[0;31mError changing permission.\033[0m"
+    end
 end
-if ARGV[0] == 'databaseRestore'
-    deployer.databaseRestore ARGV[1]
+
+# rp app <app> [db|database] deploy
+if ARGV[0] == 'deployDatabase'
+    deployer.deployDatabase ARGV[1]
+end
+
+#***************************************************
+
+# rp app <app> git
+if ARGV[0] == 'git'
+    deployer.showGitRemote(ARGV[1])
 end
 
 # This is to update server-side information based on new code.

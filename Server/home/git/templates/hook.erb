@@ -13,7 +13,7 @@ gre="\033[0;32m"
 yel="\033[0;33m"
 ncl="\033[0m" #No colour
 
-printf "\n\n${gre}Post receive hook: Updating <%= appName %>...${yel}\n\n"
+printf "\n\n${gre}Post receive hook: Updating <%= appName %>...${ncl}\n\n"
 
 cd $GIT_WORK_TREE
 sudo -u deploy git pull

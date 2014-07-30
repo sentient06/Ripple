@@ -55,6 +55,10 @@ sudo ln -s `which ruby` /usr/bin/ruby
 printf "\n\n${cya}Installing NodeJS${ncl}\n\n"
 sleep 3
 sudo apt-get install --yes nodejs
+printf "\n\n${cya}Installing libxml2${ncl}\n\n"
+#This is a tool for parsing XML documents. It is necessary to avoid issues with nokogiri when packing gems.
+sleep 3
+sudo apt-get install --yes libxslt-dev libxml2-dev
 printf "\n\n${cya}Installing Thin${ncl}\n\n"
 sleep 3
 gem install --no-rdoc --no-ri thin
@@ -139,13 +143,16 @@ sudo mkdir -p /ripple/master
 sudo mkdir -p /ripple/ripple.git
 sudo mkdir /home/git/repositories
 sudo mkdir /home/deploy/data
+sudo mkdir /home/bot/backup
 sudo mkdir /ripple/backup
 sudo chown -R git:git /ripple
 sudo chown git:git /home/git/repositories
 sudo chown deploy:deploy /ripple/master
 sudo chown deploy:deploy /home/deploy/data
+sudo chown bot:bot /home/bot/backup
 sudo chown deploy:deploy /ripple/backup
 sudo chmod 775 /ripple/master
+sudo chmod 775 /home/bot/backup
 sudo chmod 775 /ripple/backup
 cd /ripple/ripple.git
 sudo -u git git init --bare

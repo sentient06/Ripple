@@ -21,6 +21,8 @@ public:
     int checkOnlineServer(std::string serverAddr);
     int downloadFile(const char fileRemote[], const char fileLocal[], bool debug);
     int uploadFile(const char fileLocal[], const char fileRemote[], bool debug);
+    int chmodFile(const char permission[], const char fileRemote[], bool debug);
+    int chgrpFile(const char group[], const char fileRemote[], bool debug);
 };
 
 #endif /* defined(__RipplePrototype__Pigeon__) */
