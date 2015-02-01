@@ -89,11 +89,11 @@ class DeploymentActions
     @nginxAvailableFolder = generalData['nginxAvailableFolder']
     @nginxEnabledFolder   = generalData['nginxEnabledFolder']
 
-    @rubyPath             = ENV["MY_RUBY_HOME"] + "/bin/ruby"
+    @rubyPath             = "/usr/bin/ruby" # Dropped on v 2.2? ENV["MY_RUBY_HOME"] + "/bin/ruby"
     @rvmPath              = ENV["rvm_path"] + "/bin/rvm"
-    @thinPath             = ENV["rvm_path"] + "/gems/" + ENV["RUBY_VERSION"] + "@4.1.2/bin/thin"
-    @bundlePath           = ENV["rvm_path"] + "/gems/" + ENV["RUBY_VERSION"] + "@global/bin/bundle"
-    @rakePath             = ENV["rvm_path"] + "/rubies/" + ENV["RUBY_VERSION"] + "/bin/rake"
+    @thinPath             = ENV["rvm_path"] + "/gems/" + RUBY_VERSION + "@4.1.2/bin/thin"
+    @bundlePath           = ENV["rvm_path"] + "/gems/" + RUBY_VERSION + "@global/bin/bundle"
+    @rakePath             = ENV["rvm_path"] + "/rubies/" + RUBY_VERSION + "/bin/rake"
 
     # -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 
