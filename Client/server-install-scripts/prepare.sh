@@ -7,7 +7,8 @@ mainUser=`whoami`
 printf "\n\n${cya}Installing GIT${ncl}\n\n"
 sudo -S apt-get install --yes curl git-core
 printf "\n\n${cya}Installing RVM${ncl}\n\n"
-\curl -L https://get.rvm.io | sudo bash -s stable
+gpg --keyserver hkp://keys.gnupg.net --recv-keys D39DC0E3
+\curl -sSL https://get.rvm.io | sudo bash -s stable
 sudo adduser $mainUser rvm
 echo progress-bar >> /home/$mainUser/.curlrc
 printf "\n\n${red}Server will restart in 5 seconds${ncl}\n\n"
