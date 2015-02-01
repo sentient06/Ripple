@@ -26,7 +26,7 @@ The server will restart. After a while, execute the install script:
 
 The server must restart one more time. After that, all will be ready for Ripple. In the client side, you must add your own server to Ripple and push it.
 
-    git add remote myServer git@<server>:/ripple/ripple.git
+    git remote add myServer git@<server>:/ripple/ripple.git
     git push myServer master
 
 ###Client application & RSA key
