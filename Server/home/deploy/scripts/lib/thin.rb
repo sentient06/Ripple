@@ -7,7 +7,7 @@ class Thin
   def initialize
     @put    = Put.new
     @system = System.new
-    @thinPath = ENV["rvm_path"] + "/gems/" + ENV["RUBY_VERSION"] + "@ripple/bin/thin"
+    @thinPath = ENV["rvm_path"] + "/gems/" + RUBY_VERSION + "@ripple/bin/thin"
   end
 
   #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
