@@ -91,7 +91,7 @@ class DeploymentActions
 
     @rubyPath             = "/usr/bin/ruby" # Dropped on v 2.2? ENV["MY_RUBY_HOME"] + "/bin/ruby"
     @rvmPath              = ENV["rvm_path"] + "/bin/rvm"
-    @thinPath             = ENV["rvm_path"] + "/gems/" + RUBY_VERSION + "@4.1.2/bin/thin"
+    @thinPath             = ENV["rvm_path"] + "/gems/ruby-" + RUBY_VERSION + "@4.2.0/bin/thin"
     @bundlePath           = ENV["rvm_path"] + "/gems/" + RUBY_VERSION + "@global/bin/bundle"
     @rakePath             = ENV["rvm_path"] + "/rubies/" + RUBY_VERSION + "/bin/rake"
 
